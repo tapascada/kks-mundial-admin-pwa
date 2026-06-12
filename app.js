@@ -100,6 +100,7 @@ const DOM = {
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
   registerServiceWorker();
+  checkAuthentication();
   loadInitialData();
   extractTeamsList();
   populateDropdowns();
@@ -1320,4 +1321,47 @@ function showToast(message, type = 'info') {
     toast.classList.remove('show');
     toast.addEventListener('transitionend', () => toast.remove());
   }, 4000);
+}
+
+// --- Lock Screen Authentication ---
+function checkAuthentication() {
+  const isAuth = localStorage.getItem('kikes_admin_auth') === 'true';
+  const lockScreen = document.getElementById('lock-screen');
+  
+  if (isAuth) {
+    lockScreen.classList.add('hidden');
+  } else {
+    lockScreen.classList.remove('hidden');
+    
+    const passwordInput = document.getElementById('input-admin-password');
+    const verifyBtn = document.getElementById('btn-login-verify');
+    const errorMsg = document.getElementById('txt-login-error');
+    
+    const handleLogin = () => {
+      const password = passwordInput.value.trim();
+      if (password === 'guacaguaca') {
+        localStorage.setItem('kikes_admin_auth', 'true');
+        lockScreen.style.opacity = '0';
+        setTimeout(() => {
+          lockScreen.classList.add('hidden');
+        }, 300);
+        showToast('Acceso concedido', 'success');
+      } else {
+        errorMsg.classList.remove('hidden');
+        passwordInput.value = '';
+        passwordInput.focus();
+        showToast('Clave incorrecta', 'error');
+      }
+    };
+    
+    verifyBtn.addEventListener('click', handleLogin);
+    passwordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleLogin();
+    });
+    
+    // Focus input
+    setTimeout(() => {
+      passwordInput.focus();
+    }, 150);
+  }
 }

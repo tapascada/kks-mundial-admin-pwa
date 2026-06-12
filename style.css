@@ -398,10 +398,12 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-top: 1px solid var(--card-border);
-  position: absolute;
+  position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px;
   height: 65px;
   z-index: 100;
   border-bottom-left-radius: 12px;
@@ -1378,4 +1380,71 @@ body {
   .app-container {
     border-radius: 16px;
   }
+}
+
+/* Login Lock Screen Overlay */
+.login-modal {
+  background: rgba(5, 7, 13, 0.96) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  transition: opacity 0.3s ease;
+}
+
+.login-content {
+  max-width: 380px;
+  padding: 35px 24px;
+  text-align: center;
+  border-color: rgba(244, 211, 94, 0.2);
+}
+
+.login-logo-container {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.login-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  animation: pulseGold 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseGold {
+  0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(244, 211, 94, 0.4)); }
+  50% { transform: scale(1.05); filter: drop-shadow(0 0 18px rgba(244, 211, 94, 0.75)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(244, 211, 94, 0.4)); }
+}
+
+.login-content h2 {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--accent-gold);
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.login-content p {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.login-error-msg {
+  color: var(--red-accent) !important;
+  font-size: 12px !important;
+  font-weight: 700;
+  margin-top: 15px;
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.text-center {
+  text-align: center;
 }
