@@ -388,7 +388,7 @@ function renderMatchesList() {
   // Bind input listeners
   const scoreInputs = DOM.adminMatchesList.querySelectorAll('.score-input');
   scoreInputs.forEach(input => {
-    input.addEventListener('change', (e) => {
+    input.addEventListener('input', (e) => {
       const matchId = parseInt(e.target.dataset.matchId);
       const type = e.target.dataset.type;
       const match = STATE.matches.find(m => m.id === matchId);
