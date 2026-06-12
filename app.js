@@ -355,7 +355,8 @@ function renderMatchesList() {
 
     const g1Val = m.realGoals1 !== null ? m.realGoals1 : '';
     const g2Val = m.realGoals2 !== null ? m.realGoals2 : '';
-    const isFilledClass = m.realGoals1 !== null && m.realGoals2 !== null ? 'filled' : '';
+    const g1Filled = m.realGoals1 !== null ? 'filled' : '';
+    const g2Filled = m.realGoals2 !== null ? 'filled' : '';
 
     card.innerHTML = `
       <div class="match-card-header">${m.groupStage} &bull; Partido #${m.id}</div>
@@ -367,11 +368,11 @@ function renderMatchesList() {
         
         <div class="match-score-inputs">
           <div class="score-input-wrapper">
-            <input type="number" class="score-input ${isFilledClass}" data-match-id="${m.id}" data-type="goals1" value="${g1Val}" placeholder="-" min="0">
+            <input type="number" class="score-input ${g1Filled}" data-match-id="${m.id}" data-type="goals1" value="${g1Val}" placeholder="-" min="0">
           </div>
           <span class="score-separator">&ndash;</span>
           <div class="score-input-wrapper">
-            <input type="number" class="score-input ${isFilledClass}" data-match-id="${m.id}" data-type="goals2" value="${g2Val}" placeholder="-" min="0">
+            <input type="number" class="score-input ${g2Filled}" data-match-id="${m.id}" data-type="goals2" value="${g2Val}" placeholder="-" min="0">
           </div>
         </div>
 
@@ -411,18 +412,6 @@ function renderMatchesList() {
           else match.realGoals2 = null;
           e.target.classList.remove('filled');
         }
-      }
-
-      // Check if both score boxes are filled, or both empty
-      const box1 = DOM.adminMatchesList.querySelector(`.score-input[data-match-id="${matchId}"][data-type="goals1"]`);
-      const box2 = DOM.adminMatchesList.querySelector(`.score-input[data-match-id="${matchId}"][data-type="goals2"]`);
-      
-      if (match.realGoals1 === null || match.realGoals2 === null) {
-        // If one is empty, reset both in database to null to prevent partial evaluations
-        match.realGoals1 = null;
-        match.realGoals2 = null;
-        if (box1) { box1.value = ''; box1.classList.remove('filled'); }
-        if (box2) { box2.value = ''; box2.classList.remove('filled'); }
       }
 
       recalculateAllPoints();
@@ -637,19 +626,19 @@ function renderPodium(standings) {
   DOM.bronzeName.innerText = '-';
   DOM.bronzePoints.innerText = '0 pts';
 
-  const first = standings.find(s => s.rank === 1);
+  const first = standings[0];
   if (first) {
     DOM.goldName.innerText = first.name;
     DOM.goldPoints.innerText = `${first.totalPoints} pts`;
   }
 
-  const second = standings.find(s => s.rank === 2);
+  const second = standings[1];
   if (second) {
     DOM.silverName.innerText = second.name;
     DOM.silverPoints.innerText = `${second.totalPoints} pts`;
   }
 
-  const third = standings.find(s => s.rank === 3);
+  const third = standings[2];
   if (third) {
     DOM.bronzeName.innerText = third.name;
     DOM.bronzePoints.innerText = `${third.totalPoints} pts`;
