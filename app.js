@@ -331,6 +331,22 @@ function updateStats() {
 }
 
 // 1. Matches tab
+// --- Sort matches: EN VIVO → PREVIA → PENDIENTE → TERMINADO ---
+function sortMatchesByStatus(matches) {
+  const STATUS_ORDER = { 'EN VIVO': 0, 'PREVIA': 1, 'PENDIENTE': 2, 'TERMINADO': 3 };
+  return [...matches].sort((a, b) => {
+    const statusA = (a.status || 'PREVIA').toUpperCase();
+    const statusB = (b.status || 'PREVIA').toUpperCase();
+    const orderA = STATUS_ORDER[statusA] !== undefined ? STATUS_ORDER[statusA] : 2;
+    const orderB = STATUS_ORDER[statusB] !== undefined ? STATUS_ORDER[statusB] : 2;
+    if (orderA !== orderB) return orderA - orderB;
+    // Within TERMINADO: most recent first (higher id)
+    if (statusA === 'TERMINADO') return b.id - a.id;
+    // Within others: chronological order (lower id first)
+    return a.id - b.id;
+  });
+}
+
 function renderMatchesList() {
   DOM.adminMatchesList.innerHTML = '';
   
@@ -353,6 +369,9 @@ function renderMatchesList() {
     return true;
   });
 
+  // Apply priority sort: EN VIVO → PREVIA → PENDIENTE → TERMINADO
+  const sortedFiltered = sortMatchesByStatus(filtered);
+
   const playedCount = STATE.matches.filter(m => (m.status || 'PREVIA') === 'TERMINADO').length;
   const liveCount = STATE.matches.filter(m => (m.status || 'PREVIA') === 'EN VIVO').length;
   const previaCount = STATE.matches.filter(m => (m.status || 'PREVIA') === 'PREVIA').length;
@@ -363,7 +382,7 @@ function renderMatchesList() {
   if (DOM.countPrevia) DOM.countPrevia.innerText = previaCount;
   if (DOM.countPending) DOM.countPending.innerText = pendingCount;
 
-  if (filtered.length === 0) {
+  if (sortedFiltered.length === 0) {
     DOM.adminMatchesList.innerHTML = `
       <div class="empty-state">
         <i class="fa-solid fa-magnifying-glass"></i>
@@ -374,7 +393,7 @@ function renderMatchesList() {
     return;
   }
 
-  filtered.forEach(m => {
+  sortedFiltered.forEach(m => {
     const card = document.createElement('div');
     card.className = 'match-card';
     card.id = `match-card-${m.id}`;
