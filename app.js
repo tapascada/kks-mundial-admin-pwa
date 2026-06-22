@@ -50,7 +50,10 @@ const DOM = {
   matchSearchInput: document.getElementById('match-search-input'),
   matchStageFilter: document.getElementById('match-stage-filter'),
   matchStatusFilter: document.getElementById('match-status-filter'),
-  matchesPlayedCount: document.getElementById('matches-played-count'),
+  countPlayed: document.getElementById('count-played'),
+  countLive: document.getElementById('count-live'),
+  countPrevia: document.getElementById('count-previa'),
+  countPending: document.getElementById('count-pending'),
   btnSyncEspn: document.getElementById('btn-sync-espn'),
   btnClearAllMatches: document.getElementById('btn-clear-all-matches'),
   adminMatchesList: document.getElementById('admin-matches-list'),
@@ -63,6 +66,7 @@ const DOM = {
 
   // Scorer Elements
   btnAddScorerModal: document.getElementById('btn-add-scorer-modal'),
+  btnSyncScorersEspn: document.getElementById('btn-sync-scorers-espn'),
   scorerSearchInput: document.getElementById('scorer-search-input'),
   adminScorersTbody: document.getElementById('admin-scorers-tbody'),
   modalAddScorer: document.getElementById('modal-add-scorer'),
@@ -349,8 +353,15 @@ function renderMatchesList() {
     return true;
   });
 
-  const playedCount = STATE.matches.filter(m => m.realGoals1 !== null && m.realGoals2 !== null).length;
-  DOM.matchesPlayedCount.innerText = `${playedCount}/${STATE.matches.length}`;
+  const playedCount = STATE.matches.filter(m => (m.status || 'PREVIA') === 'TERMINADO').length;
+  const liveCount = STATE.matches.filter(m => (m.status || 'PREVIA') === 'EN VIVO').length;
+  const previaCount = STATE.matches.filter(m => (m.status || 'PREVIA') === 'PREVIA').length;
+  const pendingCount = STATE.matches.filter(m => (m.status || 'PREVIA') === 'PENDIENTE').length;
+
+  if (DOM.countPlayed) DOM.countPlayed.innerText = playedCount;
+  if (DOM.countLive) DOM.countLive.innerText = liveCount;
+  if (DOM.countPrevia) DOM.countPrevia.innerText = previaCount;
+  if (DOM.countPending) DOM.countPending.innerText = pendingCount;
 
   if (filtered.length === 0) {
     DOM.adminMatchesList.innerHTML = `
@@ -381,6 +392,7 @@ function renderMatchesList() {
           <option value="PREVIA" ${currentStatus === 'PREVIA' ? 'selected' : ''}>PREVIA</option>
           <option value="EN VIVO" ${currentStatus === 'EN VIVO' ? 'selected' : ''}>EN VIVO</option>
           <option value="TERMINADO" ${currentStatus === 'TERMINADO' ? 'selected' : ''}>TERMINADO</option>
+          <option value="PENDIENTE" ${currentStatus === 'PENDIENTE' ? 'selected' : ''}>PENDIENTE</option>
         </select>
       </div>
       <div class="match-card-teams">
@@ -489,7 +501,7 @@ function renderMatchesList() {
       if (!match) return;
 
       match.status = e.target.value;
-      if (match.status === 'PREVIA') {
+      if (match.status === 'PREVIA' || match.status === 'PENDIENTE') {
         match.realGoals1 = null;
         match.realGoals2 = null;
         // Re-render to clear input text boxes
@@ -1401,6 +1413,8 @@ function setupEventListeners() {
     showToast('Jugador agregado correctamente.', 'success');
   });
 
+  DOM.btnSyncScorersEspn.addEventListener('click', syncScorersFromEspn);
+
   // 6. Standings & Leaderboard Search
   DOM.leaderboardSearchInput.addEventListener('input', () => {
     // Render list
@@ -1545,6 +1559,9 @@ const TEAM_MAPPINGS = {
   "United States": "Estados Unidos",
   "USA": "Estados Unidos",
   "Turkey": "Turquía",
+  "Türkiye": "Turquía",
+  "Turkiye": "Turquía",
+  "Iraq": "Irak",
   "Germany": "Alemania",
   "Curaçao": "Curazao",
   "Curacao": "Curazao",
@@ -1637,6 +1654,17 @@ async function syncFromEspn() {
           matchStatus = "TERMINADO";
         } else if (apiState === "in") {
           matchStatus = "EN VIVO";
+        } else {
+          if (ev.date) {
+            const matchDate = new Date(ev.date);
+            const today = new Date();
+            const isToday = matchDate.getFullYear() === today.getFullYear() &&
+                            matchDate.getMonth() === today.getMonth() &&
+                            matchDate.getDate() === today.getDate();
+            if (!isToday) {
+              matchStatus = "PENDIENTE";
+            }
+          }
         }
         
         if (comp.competitors && comp.competitors.length === 2) {
@@ -1701,6 +1729,83 @@ async function syncFromEspn() {
   } catch (err) {
     console.error(err);
     showToast(`Error de sincronización: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
+async function syncScorersFromEspn() {
+  const btn = DOM.btnSyncScorersEspn;
+  if (!btn) return;
+  
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando...';
+  
+  showToast('Sincronizando goleadores con ESPN...', 'info');
+  
+  try {
+    const response = await fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/statistics");
+    if (!response.ok) throw new Error("Error al consultar la API de estadísticas de ESPN");
+    
+    const data = await response.json();
+    if (!data.stats || !Array.isArray(data.stats)) {
+      throw new Error("Formato de respuesta de estadísticas inválido");
+    }
+
+    let updatedCount = 0;
+    let addedCount = 0;
+    extractTeamsList(); // Populate TEAMS_LIST
+    
+    const goalsLeaders = data.stats.find(s => s.name === "goalsLeaders");
+    if (goalsLeaders && goalsLeaders.leaders && Array.isArray(goalsLeaders.leaders)) {
+      goalsLeaders.leaders.forEach(leader => {
+        const goals = parseInt(leader.value || 0);
+        if (leader.athlete) {
+          const playerName = (leader.athlete.displayName || "").trim();
+          let teamNameApi = "";
+          if (leader.athlete.team) {
+            teamNameApi = (leader.athlete.team.displayName || "").trim();
+          }
+          
+          const teamMapped = mapTeamName(teamNameApi, TEAMS_LIST);
+          
+          if (playerName && teamMapped && TEAMS_LIST.includes(teamMapped)) {
+            // Find existing player
+            const existingPlayer = STATE.players.find(p => p.name.toLowerCase() === playerName.toLowerCase());
+            if (existingPlayer) {
+              if (existingPlayer.goals !== goals || existingPlayer.team !== teamMapped) {
+                existingPlayer.goals = goals;
+                existingPlayer.team = teamMapped;
+                updatedCount++;
+              }
+            } else {
+              STATE.players.push({
+                name: playerName,
+                team: teamMapped,
+                goals: goals,
+                synonyms: ""
+              });
+              addedCount++;
+            }
+          }
+        }
+      });
+    }
+    
+    if (updatedCount > 0 || addedCount > 0) {
+      recalculateAllPoints();
+      saveState();
+      renderUI();
+      updateStats();
+      showToast(`¡Goleadores sincronizados! Agregados: ${addedCount}, Actualizados: ${updatedCount}.`, 'success');
+    } else {
+      showToast('Sincronización de goleadores finalizada. No se encontraron cambios.', 'info');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast(`Error al sincronizar goleadores: ${err.message}`, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalHtml;

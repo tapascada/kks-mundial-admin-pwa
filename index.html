@@ -163,17 +163,23 @@
             <div class="select-box">
               <select id="match-status-filter">
                 <option value="ALL">Todos los Estados</option>
-                <option value="PREVIA">Previa</option>
+                <option value="PREVIA">Previa (Hoy)</option>
                 <option value="EN VIVO">En Vivo</option>
                 <option value="TERMINADO">Terminado</option>
+                <option value="PENDIENTE">Pendiente</option>
               </select>
             </div>
           </div>
-          <div class="quick-stats-row">
-            <span>Partidos Jugados: <strong id="matches-played-count">0/72</strong></span>
-            <div style="display: flex; gap: 15px;">
-              <button id="btn-sync-espn" class="btn-text" style="color: var(--accent-gold);"><i class="fa-solid fa-cloud-arrow-down"></i> Actualizar desde ESPN</button>
-              <button id="btn-clear-all-matches" class="btn-text"><i class="fa-solid fa-eraser"></i> Limpiar todos los marcadores</button>
+          <div class="quick-stats-row" style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding: 10px 0;">
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; width: 100%;">
+              <span style="font-size: 11px; font-weight: bold; color: #10B981; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">Jugados: <strong id="count-played">0</strong></span>
+              <span style="font-size: 11px; font-weight: bold; color: #EF4444; background: rgba(239, 68, 68, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">En Vivo: <strong id="count-live">0</strong></span>
+              <span style="font-size: 11px; font-weight: bold; color: #F4D35E; background: rgba(244, 211, 94, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(244, 211, 94, 0.2);">Previos (Hoy): <strong id="count-previa">0</strong></span>
+              <span style="font-size: 11px; font-weight: bold; color: #94A3B8; background: rgba(148, 163, 184, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.2);">Pendientes: <strong id="count-pending">0</strong></span>
+            </div>
+            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-top: 4px;">
+              <button id="btn-sync-espn" class="btn-text" style="color: var(--accent-gold); font-size: 12px;"><i class="fa-solid fa-cloud-arrow-down"></i> Actualizar desde ESPN</button>
+              <button id="btn-clear-all-matches" class="btn-text" style="font-size: 12px;"><i class="fa-solid fa-eraser"></i> Limpiar marcadores</button>
             </div>
           </div>
         </div>
@@ -228,9 +234,14 @@
         <div class="sticky-filter-bar">
           <div class="header-with-action">
             <h2 class="view-title" style="margin: 0;"><i class="fa-solid fa-shoe-prints"></i> Goleadores del Mundial</h2>
-            <button id="btn-add-scorer-modal" class="btn btn-secondary btn-sm">
-              <i class="fa-solid fa-plus"></i> Añadir Goleador
-            </button>
+            <div style="display: flex; gap: 6px;">
+              <button id="btn-sync-scorers-espn" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-cloud-arrow-down"></i> Actualizar desde ESPN
+              </button>
+              <button id="btn-add-scorer-modal" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-plus"></i> Añadir Goleador
+              </button>
+            </div>
           </div>
           <p class="card-desc" style="margin-bottom: 10px;">El sistema otorga <strong>20 puntos</strong> de comodín a quienes predigan al goleador real. Si hay varios empatados en la cima de goles, todos se consideran válidos.</p>
           <div class="search-box">
