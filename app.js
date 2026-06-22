@@ -41,13 +41,17 @@ const DOM = {
   btnExportExcel: document.getElementById('btn-export-excel'),
   inputImportDb: document.getElementById('input-import-db'),
   inputImportUser: document.getElementById('input-import-user'),
+  inputScriptUrl: document.getElementById('input-script-url'),
+  btnSyncSheets: document.getElementById('btn-sync-sheets'),
   btnResetDb: document.getElementById('btn-reset-db'),
   btnClearDb: document.getElementById('btn-clear-db'),
 
   // Match Tab Elements
   matchSearchInput: document.getElementById('match-search-input'),
   matchStageFilter: document.getElementById('match-stage-filter'),
+  matchStatusFilter: document.getElementById('match-status-filter'),
   matchesPlayedCount: document.getElementById('matches-played-count'),
+  btnSyncEspn: document.getElementById('btn-sync-espn'),
   btnClearAllMatches: document.getElementById('btn-clear-all-matches'),
   adminMatchesList: document.getElementById('admin-matches-list'),
 
@@ -140,6 +144,12 @@ function loadInitialData() {
     showToast('No se encontró información semilla en seed_data.js', 'warning');
   }
   saveState();
+  
+  // Load script URL from localStorage
+  const scriptUrl = localStorage.getItem('kikes_admin_script_url') || 'https://script.google.com/macros/s/AKfycbw2C5cDfWGtGR-WJeI_qwD99Vzpl5_V8j-6zJnheMPZkSJ2Ld07q1sTEaiY7M8-UyI/exec';
+  if (DOM.inputScriptUrl) {
+    DOM.inputScriptUrl.value = scriptUrl;
+  }
 }
 
 function saveState() {
@@ -322,10 +332,15 @@ function renderMatchesList() {
   
   const searchVal = DOM.matchSearchInput.value.toLowerCase().trim();
   const stageFilter = DOM.matchStageFilter.value;
+  const statusFilter = DOM.matchStatusFilter.value;
 
   const filtered = STATE.matches.filter(m => {
     // Stage Filter
     if (stageFilter !== 'ALL' && m.groupStage !== stageFilter) return false;
+    
+    // Status Filter
+    const mStatus = m.status || ( (m.realGoals1 !== null && m.realGoals2 !== null) ? "TERMINADO" : "PREVIA" );
+    if (statusFilter !== 'ALL' && mStatus !== statusFilter) return false;
     
     // Search Filter
     if (searchVal) {
@@ -357,9 +372,17 @@ function renderMatchesList() {
     const g2Val = m.realGoals2 !== null ? m.realGoals2 : '';
     const g1Filled = m.realGoals1 !== null ? 'filled' : '';
     const g2Filled = m.realGoals2 !== null ? 'filled' : '';
+    const currentStatus = m.status || ( (m.realGoals1 !== null && m.realGoals2 !== null) ? "TERMINADO" : "PREVIA" );
 
     card.innerHTML = `
-      <div class="match-card-header">${m.groupStage} &bull; Partido #${m.id}</div>
+      <div class="match-card-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <span>${m.groupStage} &bull; Partido #${m.id}</span>
+        <select class="status-select" data-match-id="${m.id}" style="background: #0F172A; color: #fff; border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 5px; font-size: 11px; font-weight: bold;">
+          <option value="PREVIA" ${currentStatus === 'PREVIA' ? 'selected' : ''}>PREVIA</option>
+          <option value="EN VIVO" ${currentStatus === 'EN VIVO' ? 'selected' : ''}>EN VIVO</option>
+          <option value="TERMINADO" ${currentStatus === 'TERMINADO' ? 'selected' : ''}>TERMINADO</option>
+        </select>
+      </div>
       <div class="match-card-teams">
         <div class="team-info team-local-info">
           <span class="match-team">${m.team1}</span>
@@ -380,6 +403,28 @@ function renderMatchesList() {
           <img src="${getFlagUrl(m.team2)}" class="match-flag" onerror="this.src='Assets/Flags/placeholder.png'" alt="">
           <span class="match-team">${m.team2}</span>
         </div>
+      </div>
+      <button class="match-toggle-btn" data-match-id="${m.id}" style="margin-top: 10px; width: 100%;">
+        <i class="fa-solid fa-chevron-down"></i> Ver Pronósticos
+      </button>
+      <div class="top10-predictions-panel" id="panel-predictions-${m.id}">
+        <table class="predictions-table">
+          <thead>
+            <tr>
+              <th>Pos</th>
+              <th>Nombre</th>
+              <th>Pronóstico</th>
+              <th>Puntos</th>
+            </tr>
+          </thead>
+          <tbody id="predictions-body-${m.id}">
+            <tr>
+              <td colspan="4" style="text-align: center; padding: 15px; color: var(--text-secondary);">
+                <i class="fa-solid fa-circle-notch fa-spin"></i> Cargando pronósticos...
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     `;
     DOM.adminMatchesList.appendChild(card);
@@ -406,6 +451,14 @@ function renderMatchesList() {
           if (type === 'goals1') match.realGoals1 = intVal;
           else match.realGoals2 = intVal;
           e.target.classList.add('filled');
+          
+          // Auto set status to TERMINADO or EN VIVO if currently PREVIA
+          const currentStatus = match.status || "PREVIA";
+          if (currentStatus === 'PREVIA') {
+            match.status = 'TERMINADO';
+            const selectEl = DOM.adminMatchesList.querySelector(`#match-card-${matchId} .status-select`);
+            if (selectEl) selectEl.value = 'TERMINADO';
+          }
         } else {
           e.target.value = '';
           if (type === 'goals1') match.realGoals1 = null;
@@ -418,8 +471,114 @@ function renderMatchesList() {
       saveState();
       updateStandingsLiveOnly(); // Faster UI update
       updateStats();
+
+      // Update predictions panel if expanded
+      const panel = document.getElementById(`panel-predictions-${matchId}`);
+      if (panel && panel.classList.contains('show')) {
+        loadMatchPredictions(matchId);
+      }
     });
   });
+
+  // Bind status select listeners
+  const statusSelects = DOM.adminMatchesList.querySelectorAll('.status-select');
+  statusSelects.forEach(select => {
+    select.addEventListener('change', (e) => {
+      const matchId = parseInt(e.target.dataset.matchId);
+      const match = STATE.matches.find(m => m.id === matchId);
+      if (!match) return;
+
+      match.status = e.target.value;
+      if (match.status === 'PREVIA') {
+        match.realGoals1 = null;
+        match.realGoals2 = null;
+        // Re-render to clear input text boxes
+        renderMatchesList();
+      }
+
+      recalculateAllPoints();
+      saveState();
+      updateStandingsLiveOnly();
+      updateStats();
+
+      // Update predictions panel if expanded
+      const panel = document.getElementById(`panel-predictions-${matchId}`);
+      if (panel && panel.classList.contains('show')) {
+        loadMatchPredictions(matchId);
+      }
+    });
+  });
+
+  // Bind expand/collapse handlers for predictions
+  const toggles = DOM.adminMatchesList.querySelectorAll('.match-toggle-btn');
+  toggles.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const matchId = parseInt(btn.getAttribute('data-match-id'));
+      const panel = document.getElementById(`panel-predictions-${matchId}`);
+      const isExpanded = panel.classList.contains('show');
+      
+      if (isExpanded) {
+        panel.classList.remove('show');
+        btn.classList.remove('expanded');
+        btn.innerHTML = `<i class="fa-solid fa-chevron-down"></i> Ver Pronósticos`;
+      } else {
+        panel.classList.add('show');
+        btn.classList.add('expanded');
+        btn.innerHTML = `<i class="fa-solid fa-chevron-up"></i> Ocultar Pronósticos`;
+        
+        loadMatchPredictions(matchId);
+      }
+    });
+  });
+}
+
+function loadMatchPredictions(matchId) {
+  const tbody = document.getElementById(`predictions-body-${matchId}`);
+  if (!tbody) return;
+
+  // Filter predictions for this match
+  const filteredPreds = STATE.predictions.filter(pr => pr.matchId === matchId);
+  
+  // Sort descending by points, then name ascending
+  filteredPreds.sort((a, b) => b.points - a.points || a.participantName.localeCompare(b.participantName));
+
+  if (filteredPreds.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4" style="text-align: center; padding: 12px; color: var(--text-secondary);">
+          No hay pronósticos registrados para este partido.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  let currentRank = 1;
+  const rowsHtml = filteredPreds.map((p, idx) => {
+    if (idx > 0 && p.points < filteredPreds[idx - 1].points) {
+      currentRank = idx + 1;
+    }
+    
+    let badgeClass = 'zero';
+    if (p.points === 5) badgeClass = 'exact';
+    else if (p.points === 3) badgeClass = 'diff';
+    else if (p.points === 2) badgeClass = 'outcome';
+    
+    const predText = (p.predGoals1 !== null && p.predGoals2 !== null) ? `${p.predGoals1} - ${p.predGoals2}` : "-";
+    
+    return `
+      <tr>
+        <td class="pred-cell-rank">${currentRank}°</td>
+        <td class="pred-cell-name">${p.participantName}</td>
+        <td class="pred-cell-val">${predText}</td>
+        <td class="pred-cell-pts">
+          <span class="pred-pts-badge ${badgeClass}">${p.points} pts</span>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  tbody.innerHTML = rowsHtml;
 }
 
 // 2. Goleadores (Scorers) tab
@@ -796,7 +955,8 @@ function exportToExcel() {
     "Equipo Local": m.team1,
     "Goles Local": m.realGoals1 !== null && m.realGoals1 !== undefined ? m.realGoals1 : "",
     "Equipo Visitante": m.team2,
-    "Goles Visitante": m.realGoals2 !== null && m.realGoals2 !== undefined ? m.realGoals2 : ""
+    "Goles Visitante": m.realGoals2 !== null && m.realGoals2 !== undefined ? m.realGoals2 : "",
+    "Estado": m.status || ( (m.realGoals1 !== null && m.realGoals2 !== null) ? "TERMINADO" : "PREVIA" )
   }));
 
   // C. Build Pronosticos sheet
@@ -880,7 +1040,8 @@ function importConsolidated(file) {
         team1: String(r['Equipo Local'] || '').trim(),
         realGoals1: r['Goles Local'] === "" || r['Goles Local'] === undefined ? null : parseInt(r['Goles Local']),
         team2: String(r['Equipo Visitante'] || '').trim(),
-        realGoals2: r['Goles Visitante'] === "" || r['Goles Visitante'] === undefined ? null : parseInt(r['Goles Visitante'])
+        realGoals2: r['Goles Visitante'] === "" || r['Goles Visitante'] === undefined ? null : parseInt(r['Goles Visitante']),
+        status: String(r['Estado'] || ( (r['Goles Local'] !== "" && r['Goles Local'] !== undefined && r['Goles Visitante'] !== "" && r['Goles Visitante'] !== undefined) ? 'TERMINADO' : 'PREVIA' )).trim().toUpperCase()
       })).filter(m => m.id > 0);
 
       // Parse Pronosticos
@@ -1098,6 +1259,12 @@ function setupEventListeners() {
   // 2. Database Management Tab Listeners
   DOM.btnExportExcel.addEventListener('click', exportToExcel);
 
+  DOM.inputScriptUrl.addEventListener('input', (e) => {
+    localStorage.setItem('kikes_admin_script_url', e.target.value.trim());
+  });
+
+  DOM.btnSyncSheets.addEventListener('click', syncToGoogleSheets);
+
   DOM.inputImportDb.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -1147,12 +1314,16 @@ function setupEventListeners() {
   // 3. Match Tab Filter Listeners
   DOM.matchSearchInput.addEventListener('input', renderMatchesList);
   DOM.matchStageFilter.addEventListener('change', renderMatchesList);
+  DOM.matchStatusFilter.addEventListener('change', renderMatchesList);
   
+  DOM.btnSyncEspn.addEventListener('click', syncFromEspn);
+
   DOM.btnClearAllMatches.addEventListener('click', () => {
     if (confirm('¿Realmente deseas borrar todos los marcadores reales de los partidos? Los pronósticos volverán a valer 0 puntos.')) {
       STATE.matches.forEach(m => {
         m.realGoals1 = null;
         m.realGoals2 = null;
+        m.status = "PREVIA";
       });
       recalculateAllPoints();
       saveState();
@@ -1352,5 +1523,260 @@ function checkAuthentication() {
     setTimeout(() => {
       passwordInput.focus();
     }, 150);
+  }
+}
+
+// --- ESPN API Synchronization for Admin PWA ---
+const TEAM_MAPPINGS = {
+  "Mexico": "México",
+  "South Africa": "Sudáfrica",
+  "Korea Republic": "Corea del Sur",
+  "South Korea": "Corea del Sur",
+  "Czech Republic": "República Checa",
+  "Czechia": "República Checa",
+  "Canada": "Canadá",
+  "Bosnia & Herzegovina": "Bosnia y Herzegovina",
+  "Qatar": "Catar",
+  "Switzerland": "Suiza",
+  "Brazil": "Brasil",
+  "Morocco": "Marruecos",
+  "Haiti": "Haití",
+  "Scotland": "Escocia",
+  "United States": "Estados Unidos",
+  "USA": "Estados Unidos",
+  "Turkey": "Turquía",
+  "Germany": "Alemania",
+  "Curaçao": "Curazao",
+  "Curacao": "Curazao",
+  "Ivory Coast": "Costa de Marfil",
+  "Netherlands": "Países Bajos",
+  "Japan": "Japón",
+  "Sweden": "Suecia",
+  "Tunisia": "Túnez",
+  "Belgium": "Bélgica",
+  "Egypt": "Egipto",
+  "Iran": "Irán",
+  "New Zealand": "Nueva Zelanda",
+  "Spain": "España",
+  "Cape Verde": "Cabo Verde",
+  "Saudi Arabia": "Arabia Saudita",
+  "France": "Francia",
+  "Norway": "Noruega",
+  "Algeria": "Argelia",
+  "Jordan": "Jordania",
+  "DR Congo": "RD Congo",
+  "Congo DR": "RD Congo",
+  "Uzbekistan": "Uzbekistán",
+  "England": "Inglaterra",
+  "Croatia": "Croacia",
+  "Panama": "Panamá"
+};
+
+function removeAccents(str) {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+function mapTeamName(apiTeamName, dbTeams) {
+  if (!apiTeamName) return "";
+  const cleanedApi = apiTeamName.trim();
+  
+  if (TEAM_MAPPINGS[cleanedApi]) {
+    return TEAM_MAPPINGS[cleanedApi];
+  }
+  
+  const apiNorm = removeAccents(cleanedApi).toLowerCase();
+  for (const dbTeam of dbTeams) {
+    const dbNorm = removeAccents(dbTeam).toLowerCase();
+    if (apiNorm === dbNorm) {
+      return dbTeam;
+    }
+  }
+  return cleanedApi;
+}
+
+async function syncFromEspn() {
+  if (STATE.matches.length === 0) {
+    showToast('No hay partidos cargados para sincronizar. Importa la base de datos primero.', 'warning');
+    return;
+  }
+  
+  const btn = DOM.btnSyncEspn;
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando...';
+  
+  showToast('Sincronizando partidos con ESPN...', 'info');
+  
+  try {
+    const response = await fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719&limit=500");
+    if (!response.ok) throw new Error("Error al consultar la API de ESPN (Scoreboard)");
+    
+    const data = await response.json();
+    if (!data.events || !Array.isArray(data.events)) {
+      throw new Error("Formato de respuesta de ESPN inválido");
+    }
+
+    let updatedCount = 0;
+    extractTeamsList(); // Populate TEAMS_LIST
+    
+    data.events.forEach(ev => {
+      if (ev.competitions && ev.competitions.length > 0) {
+        const comp = ev.competitions[0];
+        
+        let completed = false;
+        let apiState = "pre";
+        if (comp.status) {
+          if (comp.status.type) {
+            completed = !!comp.status.type.completed;
+            apiState = (comp.status.type.state || "pre").toLowerCase();
+          }
+        }
+        
+        let matchStatus = "PREVIA";
+        if (completed || apiState === "post") {
+          matchStatus = "TERMINADO";
+        } else if (apiState === "in") {
+          matchStatus = "EN VIVO";
+        }
+        
+        if (comp.competitors && comp.competitors.length === 2) {
+          const comp1 = comp.competitors[0];
+          const comp2 = comp.competitors[1];
+          
+          const team1Api = comp1.team ? comp1.team.name : "";
+          const team2Api = comp2.team ? comp2.team.name : "";
+          
+          const team1Mapped = mapTeamName(team1Api, TEAMS_LIST);
+          const team2Mapped = mapTeamName(team2Api, TEAMS_LIST);
+          
+          let score1 = null;
+          let score2 = null;
+          if (comp1.score !== undefined && comp1.score !== "") {
+            const val = parseInt(comp1.score);
+            if (!isNaN(val)) score1 = val;
+          }
+          if (comp2.score !== undefined && comp2.score !== "") {
+            const val = parseInt(comp2.score);
+            if (!isNaN(val)) score2 = val;
+          }
+          
+          // Find matching match in our STATE.matches
+          const matchedMatch = STATE.matches.find(m => {
+            return (m.team1.toLowerCase() === team1Mapped.toLowerCase() && m.team2.toLowerCase() === team2Mapped.toLowerCase()) ||
+                   (m.team1.toLowerCase() === team2Mapped.toLowerCase() && m.team2.toLowerCase() === team1Mapped.toLowerCase());
+          });
+          
+          if (matchedMatch) {
+            const goals1 = matchedMatch.team1.toLowerCase() === team1Mapped.toLowerCase() ? score1 : score2;
+            const goals2 = matchedMatch.team1.toLowerCase() === team1Mapped.toLowerCase() ? score2 : score1;
+            
+            let finalGoals1 = null;
+            let finalGoals2 = null;
+            if (matchStatus === "EN VIVO" || matchStatus === "TERMINADO") {
+              finalGoals1 = goals1;
+              finalGoals2 = goals2;
+            }
+            
+            // If goals or status changed, update it
+            if (matchedMatch.realGoals1 !== finalGoals1 || matchedMatch.realGoals2 !== finalGoals2 || matchedMatch.status !== matchStatus) {
+              matchedMatch.realGoals1 = finalGoals1;
+              matchedMatch.realGoals2 = finalGoals2;
+              matchedMatch.status = matchStatus;
+              updatedCount++;
+            }
+          }
+        }
+      }
+    });
+    
+    if (updatedCount > 0) {
+      recalculateAllPoints();
+      saveState();
+      renderUI();
+      updateStats();
+      showToast(`¡Sincronización completada! Se actualizaron ${updatedCount} partidos.`, 'success');
+    } else {
+      showToast('Sincronización finalizada. No se encontraron cambios.', 'info');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast(`Error de sincronización: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
+async function syncToGoogleSheets() {
+  const url = localStorage.getItem('kikes_admin_script_url') || 'https://script.google.com/macros/s/AKfycbw2C5cDfWGtGR-WJeI_qwD99Vzpl5_V8j-6zJnheMPZkSJ2Ld07q1sTEaiY7M8-UyI/exec';
+  if (!url) {
+    showToast('Por favor, ingresa primero la URL del Web App de Google Apps Script.', 'warning');
+    return;
+  }
+
+  const btn = DOM.btnSyncSheets;
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sincronizando...';
+
+  showToast('Iniciando sincronización con Google Sheets...', 'info');
+
+  try {
+    const payload = {
+      positions: STATE.positions.map(p => ({
+        name: p.name,
+        matchPoints: p.matchPoints,
+        wildcardPoints: p.wildcardPoints,
+        totalPoints: p.totalPoints,
+        predictedWinner: p.predictedWinner || "",
+        winnerPoints: p.winnerPoints,
+        predictedSecond: p.predictedSecond || "",
+        secondPoints: p.secondPoints,
+        predictedThird: p.predictedThird || "",
+        thirdPoints: p.thirdPoints,
+        predictedScorer: p.predictedScorer || "",
+        scorerPoints: p.scorerPoints
+      })),
+      matches: STATE.matches.map(m => ({
+        id: m.id,
+        groupStage: m.groupStage,
+        team1: m.team1,
+        realGoals1: m.realGoals1,
+        team2: m.team2,
+        realGoals2: m.realGoals2,
+        status: m.status || ( (m.realGoals1 !== null && m.realGoals2 !== null) ? "TERMINADO" : "PREVIA" )
+      })),
+      predictions: STATE.predictions.map(pr => ({
+        participantName: pr.participantName,
+        matchId: pr.matchId,
+        predGoals1: pr.predGoals1,
+        predGoals2: pr.predGoals2,
+        points: pr.points
+      }))
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'text/plain'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) throw new Error("Respuesta de servidor inválida: " + response.status);
+
+    const result = await response.json();
+    if (result.status === 'success') {
+      showToast('¡Base de datos sincronizada con éxito en Google Sheets!', 'success');
+    } else {
+      throw new Error(result.message || 'Error desconocido');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast(`Error al sincronizar con Google Sheets: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
   }
 }
