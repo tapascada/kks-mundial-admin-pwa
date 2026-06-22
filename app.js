@@ -43,6 +43,7 @@ const DOM = {
   inputImportUser: document.getElementById('input-import-user'),
   inputScriptUrl: document.getElementById('input-script-url'),
   btnSyncSheets: document.getElementById('btn-sync-sheets'),
+  btnSuperSync: document.getElementById('btn-super-sync'),
   btnResetDb: document.getElementById('btn-reset-db'),
   btnClearDb: document.getElementById('btn-clear-db'),
   btnClearAllScorers: document.getElementById('btn-clear-all-scorers'),
@@ -1296,6 +1297,8 @@ function setupEventListeners() {
   });
 
   DOM.btnSyncSheets.addEventListener('click', syncToGoogleSheets);
+  
+  DOM.btnSuperSync.addEventListener('click', superSync);
 
   DOM.inputImportDb.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -2051,6 +2054,37 @@ async function syncToGoogleSheets() {
   } catch (err) {
     console.error(err);
     showToast(`Error al sincronizar con Google Sheets: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
+async function superSync() {
+  const btn = DOM.btnSuperSync;
+  if (!btn) return;
+  
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Súper Sincronizando...';
+  
+  try {
+    // 1. Sync Matches from ESPN
+    showToast('Paso 1/3: Sincronizando partidos...', 'info');
+    await syncFromEspn();
+    
+    // 2. Sync Scorers from ESPN
+    showToast('Paso 2/3: Sincronizando goleadores...', 'info');
+    await syncScorersFromEspn();
+    
+    // 3. Sync to Google Sheets
+    showToast('Paso 3/3: Publicando en Google Sheets...', 'info');
+    await syncToGoogleSheets();
+    
+    showToast('¡SÚPER SINCRONIZACIÓN COMPLETADA!', 'success');
+  } catch (err) {
+    console.error('Super Sync Error:', err);
+    showToast(`Error en la súper sincronización: ${err.message}`, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalHtml;
