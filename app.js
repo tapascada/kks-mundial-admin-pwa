@@ -2070,15 +2070,11 @@ async function superSync() {
   
   try {
     // 1. Sync Matches from ESPN
-    showToast('Paso 1/3: Sincronizando partidos...', 'info');
+    showToast('Paso 1/2: Sincronizando partidos...', 'info');
     await syncFromEspn();
     
-    // 2. Sync Scorers from ESPN
-    showToast('Paso 2/3: Sincronizando goleadores...', 'info');
-    await syncScorersFromEspn();
-    
-    // 3. Sync to Google Sheets
-    showToast('Paso 3/3: Publicando en Google Sheets...', 'info');
+    // 2. Sync to Google Sheets
+    showToast('Paso 2/2: Publicando en Google Sheets...', 'info');
     await syncToGoogleSheets();
     
     showToast('¡SÚPER SINCRONIZACIÓN COMPLETADA!', 'success');
