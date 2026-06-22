@@ -45,6 +45,7 @@ const DOM = {
   btnSyncSheets: document.getElementById('btn-sync-sheets'),
   btnResetDb: document.getElementById('btn-reset-db'),
   btnClearDb: document.getElementById('btn-clear-db'),
+  btnClearAllScorers: document.getElementById('btn-clear-all-scorers'),
 
   // Match Tab Elements
   matchSearchInput: document.getElementById('match-search-input'),
@@ -1339,6 +1340,21 @@ function setupEventListeners() {
       updateStats();
       DOM.txtStatusText.innerText = "Base Vacía";
       showToast('Base de datos vaciada por completo', 'warning');
+    }
+  });
+
+  DOM.btnClearAllScorers.addEventListener('click', () => {
+    if (STATE.players.length === 0) {
+      showToast('No hay goleadores registrados para eliminar.', 'info');
+      return;
+    }
+    if (confirm(`¿Estás seguro de que deseas ELIMINAR TODOS los ${STATE.players.length} goleadores registrados?\nEsta acción afectará los puntos de goleador de todos los participantes.`)) {
+      STATE.players = [];
+      recalculateAllPoints();
+      saveState();
+      renderUI();
+      updateStats();
+      showToast('Todos los goleadores han sido eliminados.', 'warning');
     }
   });
 
