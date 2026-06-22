@@ -1541,74 +1541,196 @@ function checkAuthentication() {
 }
 
 // --- ESPN API Synchronization for Admin PWA ---
+// Using Unicode escapes to avoid file encoding issues with special characters
 const TEAM_MAPPINGS = {
-  "Mexico": "México",
-  "South Africa": "Sudáfrica",
-  "Korea Republic": "Corea del Sur",
-  "South Korea": "Corea del Sur",
-  "Czech Republic": "República Checa",
-  "Czechia": "República Checa",
-  "Canada": "Canadá",
-  "Bosnia & Herzegovina": "Bosnia y Herzegovina",
-  "Qatar": "Catar",
-  "Switzerland": "Suiza",
-  "Brazil": "Brasil",
-  "Morocco": "Marruecos",
-  "Haiti": "Haití",
-  "Scotland": "Escocia",
-  "United States": "Estados Unidos",
-  "USA": "Estados Unidos",
-  "Turkey": "Turquía",
-  "Türkiye": "Turquía",
-  "Turkiye": "Turquía",
-  "Iraq": "Irak",
-  "Germany": "Alemania",
-  "Curaçao": "Curazao",
-  "Curacao": "Curazao",
-  "Ivory Coast": "Costa de Marfil",
-  "Netherlands": "Países Bajos",
-  "Japan": "Japón",
-  "Sweden": "Suecia",
-  "Tunisia": "Túnez",
-  "Belgium": "Bélgica",
-  "Egypt": "Egipto",
-  "Iran": "Irán",
-  "New Zealand": "Nueva Zelanda",
-  "Spain": "España",
-  "Cape Verde": "Cabo Verde",
-  "Saudi Arabia": "Arabia Saudita",
-  "France": "Francia",
-  "Norway": "Noruega",
-  "Algeria": "Argelia",
-  "Jordan": "Jordania",
-  "DR Congo": "RD Congo",
-  "Congo DR": "RD Congo",
-  "Uzbekistan": "Uzbekistán",
-  "England": "Inglaterra",
-  "Croatia": "Croacia",
-  "Panama": "Panamá"
+  // English -> Spanish mappings
+  "Mexico":                  "M\u00e9xico",
+  "South Africa":            "Sud\u00e1frica",
+  "Korea Republic":          "Corea del Sur",
+  "South Korea":             "Corea del Sur",
+  "North Korea":             "Corea del Norte",
+  "Czech Republic":          "Rep\u00fablica Checa",
+  "Czechia":                 "Rep\u00fablica Checa",
+  "Canada":                  "Canad\u00e1",
+  "Bosnia & Herzegovina":    "Bosnia y Herzegovina",
+  "Bosnia and Herzegovina":  "Bosnia y Herzegovina",
+  "Qatar":                   "Catar",
+  "Switzerland":             "Suiza",
+  "Brazil":                  "Brasil",
+  "Morocco":                 "Marruecos",
+  "Haiti":                   "Hait\u00ed",
+  "Scotland":                "Escocia",
+  "United States":           "Estados Unidos",
+  "USA":                     "Estados Unidos",
+  "US":                      "Estados Unidos",
+  "Turkey":                  "Turqu\u00eda",
+  "T\u00fcrkiye":            "Turqu\u00eda",
+  "Turkiye":                 "Turqu\u00eda",
+  "Iraq":                    "Irak",
+  "Germany":                 "Alemania",
+  "Cura\u00e7ao":            "Curazao",
+  "Curacao":                 "Curazao",
+  "Ivory Coast":             "Costa de Marfil",
+  "C\u00f4te d'Ivoire":      "Costa de Marfil",
+  "Netherlands":             "Pa\u00edses Bajos",
+  "Holland":                 "Pa\u00edses Bajos",
+  "Japan":                   "Jap\u00f3n",
+  "Sweden":                  "Suecia",
+  "Tunisia":                 "T\u00fanez",
+  "Belgium":                 "B\u00e9lgica",
+  "Egypt":                   "Egipto",
+  "Iran":                    "Ir\u00e1n",
+  "New Zealand":             "Nueva Zelanda",
+  "Spain":                   "Espa\u00f1a",
+  "Cape Verde":              "Cabo Verde",
+  "Saudi Arabia":            "Arabia Saudita",
+  "France":                  "Francia",
+  "Norway":                  "Noruega",
+  "Algeria":                 "Argelia",
+  "Jordan":                  "Jordania",
+  "DR Congo":                "RD Congo",
+  "Congo DR":                "RD Congo",
+  "Democratic Republic of Congo": "RD Congo",
+  "Uzbekistan":              "Uzbekist\u00e1n",
+  "England":                 "Inglaterra",
+  "Croatia":                 "Croacia",
+  "Panama":                  "Panam\u00e1",
+  "Peru":                    "Per\u00fa",
+  "Ecuador":                 "Ecuador",
+  "Venezuela":               "Venezuela",
+  "Chile":                   "Chile",
+  "Bolivia":                 "Bolivia",
+  "Paraguay":                "Paraguay",
+  "Costa Rica":              "Costa Rica",
+  "Honduras":                "Honduras",
+  "Jamaica":                 "Jamaica",
+  "Trinidad and Tobago":     "Trinidad y Tobago",
+  "Guatemala":               "Guatemala",
+  "El Salvador":             "El Salvador",
+  "Senegal":                 "Senegal",
+  "Nigeria":                 "Nigeria",
+  "Ghana":                   "Ghana",
+  "Cameroon":                "Camer\u00fan",
+  "Cameroun":                "Camer\u00fan",
+  "Mali":                    "Mali",
+  "Benin":                   "Ben\u00edn",
+  "Tanzania":                "Tanzania",
+  "Kenya":                   "Kenia",
+  "Angola":                  "Angola",
+  "Comoros":                 "Comoras",
+  "Mozambique":              "Mozambique",
+  "Uganda":                  "Uganda",
+  "South Sudan":             "Sud\u00e1n del Sur",
+  "Sudan":                   "Sud\u00e1n",
+  "Mauritania":              "Mauritania",
+  "Guinea":                  "Guinea",
+  "Equatorial Guinea":       "Guinea Ecuatorial",
+  "Guinea-Bissau":           "Guinea-Bis\u00e1u",
+  "Central African Republic": "Rep\u00fablica Centroafricana",
+  "Zambia":                  "Zambia",
+  "Zimbabwe":                "Zimbabue",
+  "Namibia":                 "Namibia",
+  "Botswana":                "Botsuana",
+  "Rwanda":                  "Ruanda",
+  "Australia":               "Australia",
+  "Indonesia":               "Indonesia",
+  "Philippines":             "Filipinas",
+  "Thailand":                "Tailandia",
+  "Vietnam":                 "Vietnam",
+  "China":                   "China",
+  "China PR":                "China",
+  "India":                   "India",
+  "Pakistan":                "Pakist\u00e1n",
+  "Afghanistan":             "Afganist\u00e1n",
+  "Bahrain":                 "Bar\u00e9in",
+  "Kuwait":                  "Kuwait",
+  "Oman":                    "Om\u00e1n",
+  "Lebanon":                 "L\u00edbano",
+  "Syria":                   "Siria",
+  "Yemen":                   "Yemen",
+  "Palestine":               "Palestina",
+  "Israel":                  "Israel",
+  "Russia":                  "Rusia",
+  "Ukraine":                 "Ucrania",
+  "Poland":                  "Polonia",
+  "Romania":                 "Rumania",
+  "Hungary":                 "Hungr\u00eda",
+  "Greece":                  "Grecia",
+  "Serbia":                  "Serbia",
+  "Slovakia":                "Eslovaquia",
+  "Slovenia":                "Eslovenia",
+  "Denmark":                 "Dinamarca",
+  "Finland":                 "Finlandia",
+  "Iceland":                 "Islandia",
+  "Wales":                   "Gales",
+  "Ireland":                 "Irlanda",
+  "Northern Ireland":        "Irlanda del Norte",
+  "Austria":                 "Austria",
+  "Switzerland":             "Suiza",
+  "Portugal":                "Portugal",
+  "Albania":                 "Albania",
+  "Kosovo":                  "Kosovo",
+  "Montenegro":              "Montenegro",
+  "North Macedonia":         "Macedonia del Norte",
+  "Moldova":                 "Moldavia",
+  "Belarus":                 "Bielorrusia",
+  "Georgia":                 "Georgia",
+  "Armenia":                 "Armenia",
+  "Azerbaijan":              "Azerbaiy\u00e1n",
+  "Kazakhstan":              "Kazajist\u00e1n",
+  "Kyrgyzstan":              "Kirguist\u00e1n",
+  "Tajikistan":              "Tayikist\u00e1n",
+  "Turkmenistan":            "Turkmenist\u00e1n",
+  "Mongolia":                "Mongolia",
+  "New Caledonia":           "Nueva Caledonia",
+  "Fiji":                    "Fiyi"
 };
 
 function removeAccents(str) {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
-function mapTeamName(apiTeamName, dbTeams) {
-  if (!apiTeamName) return "";
-  const cleanedApi = apiTeamName.trim();
-  
-  if (TEAM_MAPPINGS[cleanedApi]) {
-    return TEAM_MAPPINGS[cleanedApi];
-  }
-  
-  const apiNorm = removeAccents(cleanedApi).toLowerCase();
-  for (const dbTeam of dbTeams) {
-    const dbNorm = removeAccents(dbTeam).toLowerCase();
-    if (apiNorm === dbNorm) {
-      return dbTeam;
+/**
+ * Maps an ESPN team name to the Spanish name stored in the DB.
+ * Tries multiple name variants from the ESPN API response.
+ * @param {string[]} apiNameCandidates - Array of possible names from ESPN (name, displayName, shortDisplayName)
+ * @param {string[]} dbTeams - List of team names from STATE.matches
+ * @returns {string} The matched Spanish team name, or the first candidate as fallback
+ */
+function mapTeamName(apiNameCandidates, dbTeams) {
+  // Accept both old string call and new array call for backwards compatibility
+  const candidates = Array.isArray(apiNameCandidates) ? apiNameCandidates : [apiNameCandidates];
+
+  for (const rawName of candidates) {
+    if (!rawName) continue;
+    const cleanedApi = rawName.trim();
+
+    // 1. Direct mapping lookup
+    if (TEAM_MAPPINGS[cleanedApi]) {
+      return TEAM_MAPPINGS[cleanedApi];
+    }
+
+    // 2. Case-insensitive direct mapping lookup
+    const lowerCleaned = cleanedApi.toLowerCase();
+    for (const [key, val] of Object.entries(TEAM_MAPPINGS)) {
+      if (key.toLowerCase() === lowerCleaned) return val;
+    }
+
+    // 3. Normalized (no accents) match against DB teams
+    const apiNorm = removeAccents(cleanedApi).toLowerCase();
+    for (const dbTeam of dbTeams) {
+      const dbNorm = removeAccents(dbTeam).toLowerCase();
+      if (apiNorm === dbNorm) return dbTeam;
+    }
+
+    // 4. Normalized match against mapping keys
+    for (const [key, val] of Object.entries(TEAM_MAPPINGS)) {
+      if (removeAccents(key).toLowerCase() === apiNorm) return val;
     }
   }
-  return cleanedApi;
+
+  // Fallback: return the first non-empty candidate
+  return candidates.find(c => c && c.trim()) || "";
 }
 
 async function syncFromEspn() {
@@ -1671,11 +1793,22 @@ async function syncFromEspn() {
           const comp1 = comp.competitors[0];
           const comp2 = comp.competitors[1];
           
-          const team1Api = comp1.team ? comp1.team.name : "";
-          const team2Api = comp2.team ? comp2.team.name : "";
+          // Collect all available name fields from ESPN to maximize matching chances
+          const team1Candidates = comp1.team ? [
+            comp1.team.displayName,
+            comp1.team.name,
+            comp1.team.shortDisplayName,
+            comp1.team.abbreviation
+          ].filter(Boolean) : [];
+          const team2Candidates = comp2.team ? [
+            comp2.team.displayName,
+            comp2.team.name,
+            comp2.team.shortDisplayName,
+            comp2.team.abbreviation
+          ].filter(Boolean) : [];
           
-          const team1Mapped = mapTeamName(team1Api, TEAMS_LIST);
-          const team2Mapped = mapTeamName(team2Api, TEAMS_LIST);
+          const team1Mapped = mapTeamName(team1Candidates, TEAMS_LIST);
+          const team2Mapped = mapTeamName(team2Candidates, TEAMS_LIST);
           
           let score1 = null;
           let score2 = null;
