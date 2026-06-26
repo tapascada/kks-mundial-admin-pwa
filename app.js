@@ -38,9 +38,6 @@ const DOM = {
   txtStatusText: document.getElementById('txt-status-text'),
 
   // Action Elements
-  btnExportExcel: document.getElementById('btn-export-excel'),
-  inputImportDb: document.getElementById('input-import-db'),
-  inputImportUser: document.getElementById('input-import-user'),
   inputScriptUrl: document.getElementById('input-script-url'),
   btnSyncSheets: document.getElementById('btn-sync-sheets'),
   btnPullSheets: document.getElementById('btn-pull-sheets'),
@@ -1464,37 +1461,23 @@ function setupEventListeners() {
     });
   });
 
-  // 2. Database Management Tab Listeners
-  DOM.btnExportExcel.addEventListener('click', exportToExcel);
+  if (DOM.inputScriptUrl) {
+    DOM.inputScriptUrl.addEventListener('input', (e) => {
+      localStorage.setItem('kikes_admin_script_url', e.target.value.trim());
+    });
+  }
 
-  DOM.inputScriptUrl.addEventListener('input', (e) => {
-    localStorage.setItem('kikes_admin_script_url', e.target.value.trim());
-  });
-
-  DOM.btnSyncSheets.addEventListener('click', syncToGoogleSheets);
+  if (DOM.btnSyncSheets) {
+    DOM.btnSyncSheets.addEventListener('click', syncToGoogleSheets);
+  }
   
-  DOM.btnPullSheets.addEventListener('click', importFromGoogleSheets);
+  if (DOM.btnPullSheets) {
+    DOM.btnPullSheets.addEventListener('click', importFromGoogleSheets);
+  }
   
-  DOM.btnSuperSync.addEventListener('click', superSync);
-
-  DOM.inputImportDb.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      importConsolidated(file);
-      e.target.value = ''; // clear for future imports
-    }
-  });
-
-  DOM.inputImportUser.addEventListener('change', (e) => {
-    const files = e.target.files;
-    if (files.length > 0) {
-      importIndividualUserFiles(files);
-      e.target.value = ''; // clear
-    }
-  });
-
-
-
+  if (DOM.btnSuperSync) {
+    DOM.btnSuperSync.addEventListener('click', superSync);
+  }
   DOM.btnClearAllScorers.addEventListener('click', () => {
     if (STATE.players.length === 0) {
       showToast('No hay goleadores registrados para eliminar.', 'info');
