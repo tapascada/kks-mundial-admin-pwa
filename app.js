@@ -443,9 +443,21 @@ function renderMatchesList() {
     const g2Filled = m.realGoals2 !== null ? 'filled' : '';
     const currentStatus = m.status || ( (m.realGoals1 !== null && m.realGoals2 !== null) ? "TERMINADO" : "PREVIA" );
 
+    // Format date like in client PWA
+    let dateStr = '';
+    if (m.matchDate) {
+      const d = new Date(String(m.matchDate).replace(' ', 'T'));
+      if (!isNaN(d.getTime())) {
+        const options = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+        dateStr = d.toLocaleString('es-ES', options);
+      } else {
+        dateStr = m.matchDate;
+      }
+    }
+
     card.innerHTML = `
       <div class="match-card-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-        <span>${m.groupStage} &bull; Partido #${m.id}</span>
+        <span>${m.groupStage}${dateStr ? ` &bull; ${dateStr}` : ''} &bull; Partido #${m.id}</span>
         <select class="status-select" data-match-id="${m.id}" style="background: #0F172A; color: #fff; border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 5px; font-size: 11px; font-weight: bold;">
           <option value="PREVIA" ${currentStatus === 'PREVIA' ? 'selected' : ''}>PREVIA</option>
           <option value="EN VIVO" ${currentStatus === 'EN VIVO' ? 'selected' : ''}>EN VIVO</option>
@@ -1983,12 +1995,30 @@ async function syncFromEspn() {
               finalGoals1 = goals1;
               finalGoals2 = goals2;
             }
-            
-            // If goals or status changed, update it
-            if (matchedMatch.realGoals1 !== finalGoals1 || matchedMatch.realGoals2 !== finalGoals2 || matchedMatch.status !== matchStatus) {
+
+            // Format and update matchDate from ev.date if it exists
+            let formattedDate = matchedMatch.matchDate || null;
+            if (ev.date) {
+              const d = new Date(ev.date);
+              const colDate = new Date(d.getTime() - (5 * 60 * 60 * 1000));
+              const yyyy = colDate.getUTCFullYear();
+              const mm = String(colDate.getUTCMonth() + 1).padStart(2, '0');
+              const dd = String(colDate.getUTCDate()).padStart(2, '0');
+              const hh = String(colDate.getUTCHours()).padStart(2, '0');
+              const min = String(colDate.getUTCMinutes()).padStart(2, '0');
+              const ss = String(colDate.getUTCSeconds()).padStart(2, '0');
+              formattedDate = `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+            }
+
+            // If goals, status or date changed, update it
+            if (matchedMatch.realGoals1 !== finalGoals1 || 
+                matchedMatch.realGoals2 !== finalGoals2 || 
+                matchedMatch.status !== matchStatus || 
+                matchedMatch.matchDate !== formattedDate) {
               matchedMatch.realGoals1 = finalGoals1;
               matchedMatch.realGoals2 = finalGoals2;
               matchedMatch.status = matchStatus;
+              matchedMatch.matchDate = formattedDate;
               updatedCount++;
             }
           }
