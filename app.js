@@ -391,11 +391,23 @@ function renderMatchesList() {
 
   const filtered = STATE.matches.filter(m => {
     // Stage Filter
+    // Stage Filter
     if (stageFilter !== 'ALL') {
       if (stageFilter === 'Fase de Grupos') {
         if (!m.groupStage.startsWith('Grupo')) return false;
       } else if (stageFilter === '16avos de Final') {
-        if (m.groupStage !== '16avos de Final' && m.groupStage !== 'Dieciseisavos de Final') return false;
+        if (!m.groupStage.startsWith('16') && !m.groupStage.toLowerCase().includes('dieciseis')) return false;
+      } else if (stageFilter === 'Octavos de Final') {
+        if (!m.groupStage.startsWith('8') && !m.groupStage.toLowerCase().includes('octav')) return false;
+      } else if (stageFilter === 'Cuartos de Final') {
+        if (!m.groupStage.startsWith('4') && !m.groupStage.toLowerCase().includes('cuart')) return false;
+      } else if (stageFilter === 'Semifinales') {
+        if (!m.groupStage.toLowerCase().includes('semi')) return false;
+      } else if (stageFilter === 'Tercer Puesto') {
+        if (!m.groupStage.toLowerCase().includes('tercer') && !m.groupStage.toLowerCase().includes('3er')) return false;
+      } else if (stageFilter === 'Gran Final') {
+        const gs = m.groupStage.toLowerCase();
+        if (!gs.includes('final') || gs.startsWith('16') || gs.startsWith('8') || gs.startsWith('4') || gs.includes('octav') || gs.includes('cuart') || gs.includes('semi')) return false;
       } else {
         if (m.groupStage !== stageFilter) return false;
       }

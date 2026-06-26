@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kikes-mundial-admin-v13';
+const CACHE_NAME = 'kikes-mundial-admin-v14';
 const ASSETS = [
   './',
   './index.html',
