@@ -1081,6 +1081,14 @@ const SEED_DATA = {
       "realGoals1": null,
       "team2": "Ghana",
       "realGoals2": null
+    },
+    {
+      "id": 73,
+      "groupStage": "16avos de Final",
+      "team1": "TBD",
+      "realGoals1": null,
+      "team2": "TBD",
+      "realGoals2": null
     }
   ],
   "predictions": [

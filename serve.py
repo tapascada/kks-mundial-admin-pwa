@@ -8,7 +8,7 @@ mimetypes.add_type('application/javascript', '.js')
 mimetypes.add_type('application/json', '.json')
 mimetypes.add_type('image/png', '.png')
 
-PORT = 8080
+PORT = 8081
 Handler = http.server.SimpleHTTPRequestHandler
 
 class MyHTTPRequestHandler(Handler):
@@ -19,5 +19,5 @@ class MyHTTPRequestHandler(Handler):
 
 # Use ThreadingHTTPServer to handle multiple concurrent browser requests without blocking
 with http.server.ThreadingHTTPServer(("", PORT), MyHTTPRequestHandler) as httpd:
-    print(f"Serving at port {PORT}")
+    print(f"KIKES MUNDIAL ADMIN PWA - Serving at http://localhost:{PORT}")
     httpd.serve_forever()

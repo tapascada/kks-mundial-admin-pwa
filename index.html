@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>KIKES MUNDIAL 2026</title>
+  <title>KIKES MUNDIAL ADMIN</title>
   
   <!-- Manifest & Icon -->
   <link rel="manifest" href="manifest.json">
@@ -13,7 +13,7 @@
   <link rel="icon" type="image/png" href="app_icon.png">
   
   <!-- Fonts & Icons -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
   <!-- SheetJS -->
@@ -23,355 +23,514 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Toast notification container -->
+  <!-- Toast Notification Container -->
   <div id="toast-container" class="toast-container"></div>
-  
-  <!-- Refresh & Pull-to-refresh feedback -->
-  <div id="ptr-feedback" class="ptr-feedback">
-    <i class="fa-solid fa-arrows-rotate fa-spin"></i> Actualizando...
-  </div>
 
   <div class="app-container">
     
     <!-- Header -->
     <header class="app-header">
-      <button id="btn-rules" class="header-btn" aria-label="Ver reglas de la polla">
-        <i class="fa-solid fa-circle-question"></i>
-      </button>
       <div class="header-brand">
         <img src="Assets/gold_soccer_trophy.png" alt="🏆" class="header-logo-img">
         <div class="brand-text">
           <h1>KIKES MUNDIAL</h1>
-          <p>POLLA MUNDIALISTA 2026</p>
+          <p>ADMIN PANEL &bull; RECALCULATOR</p>
         </div>
       </div>
-      <button id="btn-refresh" class="header-btn" aria-label="Actualizar datos">
-        <i class="fa-solid fa-arrows-rotate" id="refresh-icon"></i>
-      </button>
+      <div class="header-status" id="db-status-badge">
+        <i class="fa-solid fa-database"></i> <span id="txt-status-text">Seed Data</span>
+      </div>
     </header>
 
-    <!-- Main Scrollable Content -->
+    <!-- Main Content Panel Area -->
     <main class="app-content">
-      
-      <!-- Panel Posiciones (Activo) -->
-      <div id="view-posiciones" class="view-panel">
-        <!-- Visual Podium (Top 3) -->
-        <section class="podium-section">
-          <h2 class="section-title">PODIO LÍDERES</h2>
-          <div class="podium-wrapper">
-            
-            <!-- 2nd Place -->
-            <div class="podium-pod silver" id="podium-2">
-              <div class="avatar-badge">🥈</div>
-              <div class="podium-name" id="txt-silver-name">-</div>
-              <div class="podium-points" id="txt-silver-points">0 pts</div>
-              <div class="podium-bar">
-                <span class="rank-num">2°</span>
-              </div>
-            </div>
-            
-            <!-- 1st Place -->
-            <div class="podium-pod gold" id="podium-1">
-              <div class="avatar-badge">🏆</div>
-              <div class="podium-name" id="txt-gold-name">-</div>
-              <div class="podium-points" id="txt-gold-points">0 pts</div>
-              <div class="podium-bar">
-                <span class="rank-num">1°</span>
-              </div>
-            </div>
-            
-            <!-- 3rd Place -->
-            <div class="podium-pod bronze" id="podium-3">
-              <div class="avatar-badge">🥉</div>
-              <div class="podium-name" id="txt-bronze-name">-</div>
-              <div class="podium-points" id="txt-bronze-points">0 pts</div>
-              <div class="podium-bar">
-                <span class="rank-num">3°</span>
-              </div>
-            </div>
-            
-          </div>
-        </section>
 
-        <!-- Search & Filters -->
-        <section class="search-section">
-          <div class="search-bar">
-            <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="search-input" placeholder="Buscar participante...">
-            <button id="clear-search" class="clear-search-btn">
-              <i class="fa-solid fa-xmark"></i>
+      <!-- 1. TAB: DATABASE & DATA MANAGEMENT -->
+      <section id="view-db" class="view-panel">
+        <h2 class="view-title"><i class="fa-solid fa-server"></i> Gestión de Base de Datos</h2>
+        
+        <!-- Status Card -->
+        <div class="admin-card stats-grid">
+          <div class="stat-box">
+            <span class="stat-num" id="stat-participants">0</span>
+            <span class="stat-label">Participantes</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num" id="stat-matches">0</span>
+            <span class="stat-label">Partidos</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num" id="stat-predictions">0</span>
+            <span class="stat-label">Predicciones</span>
+          </div>
+          <div class="stat-box">
+            <span class="stat-num" id="stat-players">0</span>
+            <span class="stat-label">Goleadores</span>
+          </div>
+        </div>
+
+        <!-- ★ PRIMARY ACTION: Google Sheets Sync — goes FIRST -->
+        <div class="admin-card action-card" style="border: 1px solid rgba(16,185,129,0.35); background: linear-gradient(135deg, rgba(16,185,129,0.07) 0%, rgba(15,23,42,0.95) 100%);">
+          <h3><i class="fa-solid fa-cloud-arrow-up" style="color:#10B981;"></i> Sincronizar con Google Sheets</h3>
+          <p class="card-desc">Publica todos los partidos, puntos y clasificaciones directamente en tu hoja de Google Drive. Hazlo después de cada actualización de marcadores.</p>
+
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <label for="input-script-url" style="font-size: 11px; font-weight: 700; color: #94A3B8; letter-spacing: 0.04em;">URL DEL WEB APP (Google Apps Script):</label>
+              <input type="text" id="input-script-url"
+                placeholder="https://script.google.com/macros/s/.../exec"
+                style="background: rgba(15,23,42,0.7); color: #fff; border: 1px solid rgba(16,185,129,0.3); border-radius: 8px; padding: 10px 12px; font-size: 12px; width: 100%; outline: none;">
+            </div>
+
+            <!-- BIG BLUE 2-LINE BUTTON: SUPER SYNC -->
+            <button id="btn-super-sync" style="
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 2px;
+              width: 100%;
+              padding: 16px 20px;
+              margin-top: 4px;
+              background: linear-gradient(135deg, #2563EB 0%, #3B82F6 50%, #60A5FA 100%);
+              color: #fff;
+              border: none;
+              border-radius: 12px;
+              cursor: pointer;
+              font-family: inherit;
+              box-shadow: 0 4px 20px rgba(59,130,246,0.45), 0 0 0 0 rgba(59,130,246,0.3);
+              transition: all 0.2s ease;
+              position: relative;
+              overflow: hidden;
+            "
+            onmouseover="this.style.boxShadow='0 6px 28px rgba(59,130,246,0.65), 0 0 0 3px rgba(59,130,246,0.2)'; this.style.transform='translateY(-1px)'"
+            onmouseout="this.style.boxShadow='0 4px 20px rgba(59,130,246,0.45)'; this.style.transform='translateY(0)'"
+            onmousedown="this.style.transform='translateY(1px)'"
+            onmouseup="this.style.transform='translateY(-1px)'">
+              <span style="font-size: 17px; font-weight: 800; letter-spacing: 0.03em; line-height: 1.2;">
+                <i class="fa-solid fa-bolt" style="margin-right: 8px;"></i>⚡ SÚPER SINCRONIZACIÓN
+              </span>
+              <span style="font-size: 12px; font-weight: 400; opacity: 0.88; letter-spacing: 0.02em;">
+                Partidos ESPN + Google Sheets
+              </span>
+            </button>
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 5px 0;">
+
+            <!-- BIG GREEN 2-LINE BUTTON -->
+            <button id="btn-sync-sheets" style="
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 2px;
+              width: 100%;
+              padding: 16px 20px;
+              margin-top: 4px;
+              background: linear-gradient(135deg, #059669 0%, #10B981 50%, #34D399 100%);
+              color: #fff;
+              border: none;
+              border-radius: 12px;
+              cursor: pointer;
+              font-family: inherit;
+              box-shadow: 0 4px 20px rgba(16,185,129,0.45), 0 0 0 0 rgba(16,185,129,0.3);
+              transition: all 0.2s ease;
+              position: relative;
+              overflow: hidden;
+            "
+            onmouseover="this.style.boxShadow='0 6px 28px rgba(16,185,129,0.65), 0 0 0 3px rgba(16,185,129,0.2)'; this.style.transform='translateY(-1px)'"
+            onmouseout="this.style.boxShadow='0 4px 20px rgba(16,185,129,0.45)'; this.style.transform='translateY(0)'"
+            onmousedown="this.style.transform='translateY(1px)'"
+            onmouseup="this.style.transform='translateY(-1px)'">
+              <span style="font-size: 17px; font-weight: 800; letter-spacing: 0.03em; line-height: 1.2;">
+                <i class="fa-solid fa-cloud-arrow-up" style="margin-right: 8px;"></i>☁️ SINCRONIZAR AHORA
+              </span>
+              <span style="font-size: 12px; font-weight: 400; opacity: 0.88; letter-spacing: 0.02em;">
+                con Google Sheets → publicar posiciones y resultados
+              </span>
             </button>
           </div>
-        </section>
+        </div>
 
-        <!-- Leaderboard List / Table -->
-        <section class="leaderboard-section">
-          <div class="leaderboard-card">
-            <div class="table-header">
-              <div class="col-rank">Puesto</div>
-              <div class="col-name">Participante</div>
-              <div class="col-details">Part./Com.</div>
-              <div class="col-total">Total</div>
-            </div>
-            <div id="leaderboard-list" class="leaderboard-list">
-              <!-- Loaded dynamically in JS -->
-              <div class="loading-state">
-                <i class="fa-solid fa-circle-notch fa-spin"></i>
-                <p>Cargando posiciones...</p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
+        <!-- Action Card: Import/Export -->
+        <div class="admin-card action-card">
+          <h3><i class="fa-solid fa-file-excel text-gold"></i> Importar / Exportar Excel</h3>
+          <p class="card-desc">Carga archivos individuales de predicción o la base de datos completa. Exporta los resultados finales para la PWA de usuario.</p>
+          
+          <div class="btn-group-vertical">
+            <!-- Export Button -->
+            <button id="btn-export-excel" class="btn btn-primary btn-lg">
+              <i class="fa-solid fa-file-arrow-down"></i> Exportar KikesMundial_Posiciones.xlsm
+            </button>
+            
+            <hr class="card-divider">
 
-      <!-- Panel Partidos (Oculto) -->
-      <div id="view-partidos" class="view-panel hidden">
-        <section class="search-section" style="margin-bottom: 10px;">
-          <div class="search-bar">
-            <i class="fa-solid fa-filter search-icon"></i>
-            <select id="match-phase-filter" style="flex: 1; background: transparent; border: none; color: var(--text-primary); font-family: inherit; font-size: 15px; padding: 8px 0; outline: none; cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none;">
-              <option value="ALL" style="background: var(--card-bg); color: var(--text-primary);">Todas las Fases</option>
-              <option value="GRUPO" style="background: var(--card-bg); color: var(--text-primary);">Fase de Grupos</option>
-              <option value="16VOS" style="background: var(--card-bg); color: var(--text-primary);">Dieciseisavos de Final</option>
-              <option value="8VOS" style="background: var(--card-bg); color: var(--text-primary);">Octavos de Final</option>
-              <option value="4TOS" style="background: var(--card-bg); color: var(--text-primary);">Cuartos de Final</option>
-              <option value="SEMIS" style="background: var(--card-bg); color: var(--text-primary);">Semifinal</option>
-              <option value="3ER" style="background: var(--card-bg); color: var(--text-primary);">Tercer Puesto</option>
-              <option value="FINAL" style="background: var(--card-bg); color: var(--text-primary);">Final</option>
-            </select>
-            <i class="fa-solid fa-chevron-down" style="color: var(--text-secondary); font-size: 12px; pointer-events: none; margin-left: auto;"></i>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 0 4px; font-size: 13px; color: var(--text-secondary);">
-            <input type="checkbox" id="sort-by-date" style="accent-color: var(--accent-gold); cursor: pointer; width: 16px; height: 16px;">
-            <label for="sort-by-date" style="cursor: pointer; user-select: none;">Ordenar por fecha (jugados al final)</label>
-          </div>
-        </section>
-        <section class="search-section" style="margin-bottom: 0px; padding-bottom: 0px;">
-          <div class="matches-filter-bar">
-            <button class="filter-chip active" data-status="ALL">Todos</button>
-            <button class="filter-chip" data-status="EN VIVO">🔴 En Vivo</button>
-            <button class="filter-chip" data-status="PREVIA">⏳ Previas (Hoy)</button>
-            <button class="filter-chip" data-status="TERMINADO">✅ Terminados</button>
-            <button class="filter-chip" data-status="PENDIENTE">📅 Pendientes</button>
-          </div>
-        </section>
-        <section class="matches-section">
-          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding: 0 4px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <h2 class="section-title" style="margin: 0; padding: 0;">PARTIDOS</h2>
+            <!-- Import DB File -->
+            <div class="file-upload-wrapper">
+              <label for="input-import-db" class="btn btn-secondary">
+                <i class="fa-solid fa-file-arrow-up"></i> Importar Consolidado (.xlsm / .xlsx)
+              </label>
+              <input type="file" id="input-import-db" accept=".xlsx, .xlsm">
+              <span class="file-upload-info">Actualiza toda la base de datos (partidos, participantes y predicciones).</span>
             </div>
-            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+
+            <!-- Import Individual File -->
+            <div class="file-upload-wrapper">
+              <label for="input-import-user" class="btn btn-dark">
+                <i class="fa-solid fa-user-plus"></i> Importar Plantilla Participante (.xlsx / .xlsm)
+              </label>
+              <input type="file" id="input-import-user" accept=".xlsx, .xlsm" multiple>
+              <span class="file-upload-info">Sube plantillas de jugadores individuales para agregarlos o actualizar sus predicciones.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="admin-card danger-card">
+          <h3><i class="fa-solid fa-triangle-exclamation"></i> Zona de Peligro</h3>
+          <p class="card-desc">Acciones destructivas que afectan la base de datos persistida localmente.</p>
+          
+          <div class="btn-group-horizontal">
+            <button id="btn-reset-db" class="btn btn-danger">
+              <i class="fa-solid fa-arrow-rotate-left"></i> Restablecer Datos de Semilla
+            </button>
+            <button id="btn-clear-db" class="btn btn-danger-outline">
+              <i class="fa-solid fa-trash-can"></i> Borrar Todo
+            </button>
+          </div>
+          <div style="margin-top: 10px;">
+            <button id="btn-clear-all-scorers" class="btn btn-danger-outline" style="width: 100%;">
+              <i class="fa-solid fa-shoe-prints"></i> Eliminar Todos los Goleadores
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. TAB: EDIT MATCHES (PARTIDOS) -->
+      <section id="view-matches" class="view-panel hidden">
+        <div class="sticky-filter-bar">
+          <h2 class="view-title" style="margin: 0;"><i class="fa-solid fa-circle-play"></i> Resultados Reales</h2>
+          <div class="filter-controls">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass search-icon"></i>
+              <input type="text" id="match-search-input" placeholder="Buscar equipo...">
+            </div>
+            <div class="select-box">
+              <select id="match-stage-filter">
+                <option value="ALL">Todas las Fases</option>
+                <option value="Grupo A">Grupo A</option>
+                <option value="Grupo B">Grupo B</option>
+                <option value="Grupo C">Grupo C</option>
+                <option value="Grupo D">Grupo D</option>
+                <option value="Grupo E">Grupo E</option>
+                <option value="Grupo F">Grupo F</option>
+                <option value="Grupo G">Grupo G</option>
+                <option value="Grupo H">Grupo H</option>
+                <option value="Grupo I">Grupo I</option>
+                <option value="Grupo J">Grupo J</option>
+                <option value="Grupo K">Grupo K</option>
+                <option value="Grupo L">Grupo L</option>
+              </select>
+            </div>
+            <div class="select-box">
+              <select id="match-status-filter">
+                <option value="ALL">Todos los Estados</option>
+                <option value="PREVIA">Previa (Hoy)</option>
+                <option value="EN VIVO">En Vivo</option>
+                <option value="TERMINADO">Terminado</option>
+                <option value="PENDIENTE">Pendiente</option>
+              </select>
+            </div>
+          </div>
+          <div class="quick-stats-row" style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding: 10px 0;">
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; width: 100%;">
               <span style="font-size: 11px; font-weight: bold; color: #10B981; background: rgba(16, 185, 129, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(16, 185, 129, 0.2);">Jugados: <strong id="count-played">0</strong></span>
               <span style="font-size: 11px; font-weight: bold; color: #EF4444; background: rgba(239, 68, 68, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">En Vivo: <strong id="count-live">0</strong></span>
               <span style="font-size: 11px; font-weight: bold; color: #F4D35E; background: rgba(244, 211, 94, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(244, 211, 94, 0.2);">Previos (Hoy): <strong id="count-previa">0</strong></span>
               <span style="font-size: 11px; font-weight: bold; color: #94A3B8; background: rgba(148, 163, 184, 0.1); padding: 3px 8px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.2);">Pendientes: <strong id="count-pending">0</strong></span>
             </div>
+            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; margin-top: 4px;">
+              <button id="btn-sync-espn" class="btn-text" style="color: var(--accent-gold); font-size: 12px;"><i class="fa-solid fa-cloud-arrow-down"></i> Actualizar desde ESPN</button>
+              <button id="btn-clear-all-matches" class="btn-text" style="font-size: 12px;"><i class="fa-solid fa-eraser"></i> Limpiar marcadores</button>
+            </div>
           </div>
-          <div id="matches-list" class="matches-list">
-            <!-- Loaded dynamically in JS -->
-            <div class="loading-state">
-              <i class="fa-solid fa-circle-notch fa-spin"></i>
-              <p>Cargando partidos...</p>
+        </div>
+
+        <div id="admin-matches-list" class="matches-list">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+
+      <!-- 3. TAB: WILDCARDS (COMODINES) -->
+      <section id="view-wildcards" class="view-panel hidden">
+        <h2 class="view-title"><i class="fa-solid fa-award"></i> Ganadores de Comodines</h2>
+        
+        <div class="admin-card">
+          <h3><i class="fa-solid fa-crown text-gold"></i> Cuadro de Honor Real</h3>
+          <p class="card-desc">Ingresa las selecciones nacionales reales que ocuparon los tres primeros puestos y el goleador definitivo.</p>
+          
+          <div class="form-group">
+            <label for="select-real-winner"><i class="fa-solid fa-trophy text-gold"></i> Campeón Mundial (30 pts)</label>
+            <select id="select-real-winner" class="form-control">
+              <option value="">-- Seleccionar Equipo --</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="select-real-second"><i class="fa-solid fa-medal text-silver"></i> Subcampeón (20 pts)</label>
+            <select id="select-real-second" class="form-control">
+              <option value="">-- Seleccionar Equipo --</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="select-real-third"><i class="fa-solid fa-medal text-bronze"></i> Tercer Puesto (10 pts)</label>
+            <select id="select-real-third" class="form-control">
+              <option value="">-- Seleccionar Equipo --</option>
+            </select>
+          </div>
+          
+          <button id="btn-save-wildcards" class="btn btn-primary" style="margin-top: 10px;">
+            <i class="fa-solid fa-floppy-disk"></i> Guardar Comodines
+          </button>
+        </div>
+        
+        <div class="admin-card">
+          <h3><i class="fa-solid fa-circle-info text-blue"></i> Nota de Recálculo</h3>
+          <p class="card-desc" style="margin-bottom: 0;">Al cambiar estos valores y hacer clic en Guardar, se recalcularán automáticamente los puntos comodín de todos los participantes. Asegúrate de que los nombres de los equipos coincidan de forma exacta con la base de datos.</p>
+        </div>
+      </section>
+
+      <!-- 4. TAB: SCORERS (GOLEADORES) -->
+      <section id="view-scorers" class="view-panel hidden">
+        <div class="sticky-filter-bar">
+          <div class="header-with-action">
+            <h2 class="view-title" style="margin: 0;"><i class="fa-solid fa-shoe-prints"></i> Goleadores del Mundial</h2>
+            <div style="display: flex; gap: 6px;">
+              <button id="btn-sync-scorers-espn" class="btn btn-primary btn-sm">
+                <i class="fa-solid fa-cloud-arrow-down"></i> Actualizar desde ESPN
+              </button>
+              <button id="btn-add-scorer-modal" class="btn btn-secondary btn-sm">
+                <i class="fa-solid fa-plus"></i> Añadir Goleador
+              </button>
+            </div>
+          </div>
+          <p class="card-desc" style="margin-bottom: 10px;">El sistema otorga <strong>20 puntos</strong> de comodín a quienes predigan al goleador real. Si hay varios empatados en la cima de goles, todos se consideran válidos.</p>
+          <div class="search-box">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="scorer-search-input" placeholder="Buscar goleador...">
+          </div>
+        </div>
+
+        <div class="scorers-container">
+          <div class="admin-card" style="padding: 10px;">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>Jugador</th>
+                  <th>Selección</th>
+                  <th style="text-align: center;">Goles</th>
+                  <th style="width: 130px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="admin-scorers-tbody">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. TAB: LEADERS & STANDINGS (POSICIONES) -->
+      <section id="view-standings" class="view-panel hidden">
+        <!-- Visual Podium (Top 3) -->
+        <section class="podium-section">
+          <h2 class="section-title">PODIO ACTUAL LÍDERES</h2>
+          <div class="podium-wrapper">
+            <!-- 2nd Place -->
+            <div class="podium-pod silver" id="podium-2">
+              <div class="avatar-badge">🥈</div>
+              <div class="podium-name" id="txt-silver-name">-</div>
+              <div class="podium-points" id="txt-silver-points">0 pts</div>
+              <div class="podium-bar"><span class="rank-num">2°</span></div>
+            </div>
+            <!-- 1st Place -->
+            <div class="podium-pod gold" id="podium-1">
+              <div class="avatar-badge">🏆</div>
+              <div class="podium-name" id="txt-gold-name">-</div>
+              <div class="podium-points" id="txt-gold-points">0 pts</div>
+              <div class="podium-bar"><span class="rank-num">1°</span></div>
+            </div>
+            <!-- 3rd Place -->
+            <div class="podium-pod bronze" id="podium-3">
+              <div class="avatar-badge">🥉</div>
+              <div class="podium-name" id="txt-bronze-name">-</div>
+              <div class="podium-points" id="txt-bronze-points">0 pts</div>
+              <div class="podium-bar"><span class="rank-num">3°</span></div>
             </div>
           </div>
         </section>
-      </div>
 
-      <!-- Panel Participantes (Oculto) -->
-      <div id="view-participantes" class="view-panel hidden">
-        <section class="search-section">
+        <!-- Search standind list -->
+        <section class="search-section" style="margin-top: 15px;">
           <div class="search-bar">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
-            <input type="text" id="participant-search-input" placeholder="Buscar participante...">
-            <button id="clear-participant-search" class="clear-search-btn">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
+            <input type="text" id="leaderboard-search-input" placeholder="Buscar participante...">
           </div>
         </section>
 
-        <section class="participants-section">
-          <div class="leaderboard-card">
-            <div class="table-header">
-              <div class="col-rank">Puesto</div>
-              <div class="col-name">Participante</div>
-              <div class="col-details">Total Puntos</div>
-              <div class="col-total">Acción</div>
-            </div>
-            <div id="participants-list" class="participants-list">
-              <!-- Loaded dynamically in JS -->
-              <div class="loading-state">
-                <i class="fa-solid fa-circle-notch fa-spin"></i>
-                <p>Cargando participantes...</p>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <!-- Last Update info -->
-      <div class="update-info">
-        <p id="txt-last-update">Última actualización: Desconocida</p>
-      </div>
+        <!-- Standings List -->
+        <div class="leaderboard-list" id="admin-leaderboard-list" style="margin-top: 15px;">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
 
     </main>
 
-    <!-- Bottom Navigation Tab Bar -->
-    <nav class="bottom-nav">
-      <button class="nav-tab active" id="tab-posiciones">
-        <i class="fa-solid fa-chart-simple"></i>
-        <span>Posiciones</span>
+    <!-- Bottom Navigation Bar -->
+    <nav class="app-nav">
+      <button class="nav-item active" id="tab-db">
+        <i class="fa-solid fa-database"></i>
+        <span>Base Datos</span>
       </button>
-      <button class="nav-tab" id="tab-participantes">
-        <i class="fa-solid fa-users"></i>
-        <span>Participantes</span>
-      </button>
-      <button class="nav-tab" id="tab-partidos">
-        <i class="fa-solid fa-circle-play"></i>
+      <button class="nav-item" id="tab-matches">
+        <i class="fa-solid fa-soccer-ball"></i>
         <span>Partidos</span>
+      </button>
+      <button class="nav-item" id="tab-wildcards">
+        <i class="fa-solid fa-award"></i>
+        <span>Comodines</span>
+      </button>
+      <button class="nav-item" id="tab-scorers">
+        <i class="fa-solid fa-shoe-prints"></i>
+        <span>Goleadores</span>
+      </button>
+      <button class="nav-item" id="tab-standings">
+        <i class="fa-solid fa-ranking-star"></i>
+        <span>Posiciones</span>
       </button>
     </nav>
 
   </div>
 
-  <!-- Rules Modal -->
-  <div id="modal-rules" class="modal-overlay hidden">
-    <div class="modal-card" style="max-height: 85vh; display: flex; flex-direction: column;">
+  <!-- MODAL: ADD SCORER -->
+  <div id="modal-add-scorer" class="modal hidden">
+    <div class="modal-content">
       <div class="modal-header">
-        <h3><i class="fa-solid fa-circle-question"></i> Reglas de la Polla</h3>
-        <button id="rules-modal-close" class="modal-close-btn">&times;</button>
+        <h2><i class="fa-solid fa-plus"></i> Agregar Nuevo Jugador</h2>
+        <button class="modal-close" id="btn-close-scorer-modal">&times;</button>
       </div>
-      <div class="modal-body" style="overflow-y: auto; flex: 1; padding-bottom: 10px; display: flex; flex-direction: column; gap: 15px;">
-        <p class="modal-info">Conoce el sistema de puntuación para los pronósticos y comodines de KIKES MUNDIAL 2026.</p>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="input-scorer-name">Nombre del Jugador</label>
+          <input type="text" id="input-scorer-name" class="form-control" placeholder="Ej: Lionel Messi">
+        </div>
+        <div class="form-group">
+          <label for="select-scorer-team">Selección Nacional</label>
+          <select id="select-scorer-team" class="form-control">
+            <option value="">-- Seleccionar País --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="input-scorer-goals">Goles Iniciales</label>
+          <input type="number" id="input-scorer-goals" class="form-control" value="0" min="0">
+        </div>
+        <div class="form-group">
+          <label for="input-scorer-synonyms">Sinónimos (Separados por punto y coma ';')</label>
+          <input type="text" id="input-scorer-synonyms" class="form-control" placeholder="Ej: L. Messi; Messi; L.Messy">
+        </div>
         
-        <div class="rules-section">
-          <h4 style="color: var(--accent-gold); font-size: 14px; margin-bottom: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; text-transform: uppercase;">⚽ PUNTUACIÓN — FASE DE GRUPOS</h4>
-          <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px;">
-            <li>
-              <strong style="color: var(--accent-gold); display: block; margin-bottom: 2px; font-size: 14px;">🥇 +5 Puntos: Marcador Exacto</strong>
-              <span style="font-size: 13px; color: var(--text-secondary); line-height: 1.3;">Acertar los goles exactos de ambos equipos.<br><em>Ejemplo: Predicción 2 - 1, Resultado Real 2 - 1.</em></span>
-            </li>
-            <li>
-              <strong style="color: #3b82f6; display: block; margin-bottom: 2px; font-size: 14px;">🥈 +3 Puntos: Diferencia de Goles / Empate no Exacto</strong>
-              <span style="font-size: 13px; color: var(--text-secondary); line-height: 1.3;">Acertar el resultado (ganador) y la diferencia de goles exacta (sin marcador exacto), o acertar un empate no exacto.<br><em>Ejemplo: Predicción 2 - 0, Resultado Real 3 - 1 (dif. +2); o Predicción 2 - 2, Resultado Real 1 - 1 (dif. 0).</em></span>
-            </li>
-            <li>
-              <strong style="color: var(--text-primary); display: block; margin-bottom: 2px; font-size: 14px;">🥉 +2 Puntos: Resultado (Ganador)</strong>
-              <span style="font-size: 13px; color: var(--text-secondary); line-height: 1.3;">Acertar qué equipo gana pero no la diferencia ni el marcador exacto.<br><em>Ejemplo: Predicción 3 - 0, Resultado Real 2 - 1.</em></span>
-            </li>
-            <li>
-              <strong style="color: #ef4444; display: block; margin-bottom: 2px; font-size: 14px;">❌ 0 Puntos: Sin Acierto</strong>
-              <span style="font-size: 13px; color: var(--text-secondary); line-height: 1.3;">No acertar el ganador o empate.<br><em>Ejemplo: Predicción 1 - 1, Resultado Real 0 - 2.</em></span>
-            </li>
-          </ul>
-        </div>
+        <button id="btn-save-new-scorer" class="btn btn-primary" style="width: 100%; margin-top: 15px;">
+          <i class="fa-solid fa-circle-check"></i> Guardar Jugador
+        </button>
+      </div>
+    </div>
+  </div>
 
-        <div class="rules-section">
-          <h4 style="color: #f97316; font-size: 14px; margin-bottom: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; text-transform: uppercase;">🔟 PUNTUACIÓN — FASE ELIMINATORIA (16avos en adelante)</h4>
-          <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.4;">En eliminación directa solo se premia acertar el equipo que avanza a la siguiente ronda.</p>
-          <ul style="list-style: none; display: flex; flex-direction: column; gap: 12px;">
-            <li>
-              <strong style="color: var(--accent-gold); display: block; margin-bottom: 2px; font-size: 14px;">🏅 +2 Puntos: Acertar el Equipo Ganador</strong>
-              <span style="font-size: 13px; color: var(--text-secondary); line-height: 1.3;">El equipo que pronosticaste avanza, ya sea por resultado normal (90 min / prórroga) <strong style="color: var(--text-primary);">o por penaltis</strong>. El marcador exacto no importa.</span>
-            </li>
-            <li>
-              <strong style="color: #ef4444; display: block; margin-bottom: 2px; font-size: 14px;">❌ 0 Puntos: Sin Acierto</strong>
-              <span style="font-size: 13px; color: var(--text-secondary); line-height: 1.3;">El equipo pronosticado no avanza a la siguiente fase.</span>
-            </li>
-          </ul>
+  <!-- MODAL: PARTICIPANT DETAIL -->
+  <div id="modal-participant-detail" class="modal hidden">
+    <div class="modal-content detail-modal">
+      <div class="modal-header">
+        <h2 id="detail-participant-name"><i class="fa-solid fa-user-tie"></i> Nombre Participante</h2>
+        <button class="modal-close" id="participant-modal-close">&times;</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Totals banner -->
+        <div class="detail-totals-banner">
+          <div class="detail-total-box">
+            <span class="detail-total-val" id="detail-total-points">0 pts</span>
+            <span class="detail-total-lbl">Puntos Totales</span>
+          </div>
+          <div class="detail-total-box">
+            <span class="detail-total-val" id="detail-match-points">0 pts</span>
+            <span class="detail-total-lbl">Puntos Partidos</span>
+          </div>
+          <div class="detail-total-box">
+            <span class="detail-total-val" id="detail-wildcard-points">0 pts</span>
+            <span class="detail-total-lbl">Puntos Comodín</span>
+          </div>
         </div>
-
-        <div class="rules-section">
-          <h4 style="color: var(--accent-gold); font-size: 14px; margin-bottom: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; text-transform: uppercase;">🏆 COMODINES Y PODIO</h4>
-          <p class="modal-info" style="margin-bottom: 8px;">Se puntúan al finalizar el torneo real:</p>
-          <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--text-secondary);">
-            <li>🥇 <strong>Campeón del Mundo:</strong> <span style="color: var(--accent-gold); font-weight: bold;">30 pts</span> si aciertas el ganador.</li>
-            <li>🥈 <strong>Subcampeón:</strong> <span style="color: var(--accent-gold); font-weight: bold;">20 pts</span> si aciertas el segundo puesto.</li>
-            <li>🥉 <strong>Tercer Puesto:</strong> <span style="color: var(--accent-gold); font-weight: bold;">10 pts</span> si aciertas el tercer puesto.</li>
-            <li>🏃 <strong>Goleador del Mundial:</strong> <span style="color: var(--accent-gold); font-weight: bold;">20 pts</span> si aciertas el máximo goleador real.</li>
-          </ul>
+        
+        <!-- Wildcards Predictions -->
+        <div class="detail-section">
+          <h3>🏆 Comodines Predichos</h3>
+          <div class="detail-wildcards-grid">
+            <div class="detail-wc-box">
+              <span class="wc-label">Campeón</span>
+              <span class="wc-value" id="detail-wc-winner">-</span>
+              <span class="wc-points-badge" id="detail-wc-winner-pts">0 pts</span>
+            </div>
+            <div class="detail-wc-box">
+              <span class="wc-label">Subcampeón</span>
+              <span class="wc-value" id="detail-wc-second">-</span>
+              <span class="wc-points-badge" id="detail-wc-second-pts">0 pts</span>
+            </div>
+            <div class="detail-wc-box">
+              <span class="wc-label">Tercero</span>
+              <span class="wc-value" id="detail-wc-third">-</span>
+              <span class="wc-points-badge" id="detail-wc-third-pts">0 pts</span>
+            </div>
+            <div class="detail-wc-box">
+              <span class="wc-label">Goleador</span>
+              <span class="wc-value" id="detail-wc-scorer">-</span>
+              <span class="wc-points-badge" id="detail-wc-scorer-pts">0 pts</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Predictions History -->
+        <div class="detail-section">
+          <h3>⚽ Predicciones vs Resultados</h3>
+          <div class="detail-predictions-list" id="detail-predictions-list">
+            <!-- Populated dynamically -->
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-
-
-  <!-- Participant Detail Modal -->
-  <div id="modal-participant-detail" class="modal-overlay hidden">
-    <div class="modal-card participant-detail-card">
-      <div class="modal-header">
-        <h3 id="detail-participant-name"><i class="fa-solid fa-user-tie"></i> Nombre</h3>
-        <button id="participant-modal-close" class="modal-close-btn" style="font-size: 14px; font-weight: 600; color: var(--accent-gold); display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-chevron-left"></i> Volver</button>
+  <!-- Lock Screen Overlay -->
+  <div id="lock-screen" class="modal login-modal">
+    <div class="modal-content login-content">
+      <div class="login-logo-container">
+        <img src="Assets/gold_soccer_trophy.png" alt="🏆" class="login-logo">
       </div>
-      <div class="modal-body" style="overflow-y: auto; flex: 1; padding-bottom: 15px; display: flex; flex-direction: column; gap: 15px;">
-        
-        <!-- Summary Stats -->
-        <div class="participant-summary-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 5px;">
-          <div class="summary-stat" style="background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); padding: 10px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; gap: 3px;">
-            <span class="stat-label" style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px;">Total</span>
-            <span class="stat-value" id="detail-total-points" style="font-size: 20px; font-weight: 800; color: var(--accent-gold);">0 pts</span>
-          </div>
-          <div class="summary-stat" style="background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); padding: 10px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; gap: 3px;">
-            <span class="stat-label" style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px;">Partidos</span>
-            <span class="stat-value" id="detail-match-points" style="font-size: 16px; font-weight: 700; color: var(--text-primary);">0 pts</span>
-          </div>
-          <div class="summary-stat" style="background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); padding: 10px; border-radius: 12px; text-align: center; display: flex; flex-direction: column; gap: 3px;">
-            <span class="stat-label" style="font-size: 11px; text-transform: uppercase; color: var(--text-secondary); letter-spacing: 0.5px;">Comodines</span>
-            <span class="stat-value" id="detail-wildcard-points" style="font-size: 16px; font-weight: 700; color: var(--text-primary);">0 pts</span>
-          </div>
-        </div>
-
-        <!-- Wildcards / Pronósticos de Podio -->
-        <div class="wildcards-panel">
-          <h4 class="section-subtitle" style="font-size: 13px; color: var(--accent-gold); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; font-weight: 600;">🏆 Pronósticos de Podio</h4>
-          <div class="wildcards-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <div class="wildcard-item" style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 10px; border: 1px solid var(--card-border);">
-              <div class="wc-badge gold" style="font-size: 16px;">🥇</div>
-              <div class="wc-info" style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
-                <span class="wc-label" style="font-size: 10px; color: var(--text-secondary);">Campeón</span>
-                <span class="wc-value" id="detail-wc-winner" style="font-size: 12px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">-</span>
-              </div>
-              <span class="wc-pts" id="detail-wc-winner-pts" style="font-size: 11px; font-weight: bold; color: var(--text-secondary);">0 pts</span>
-            </div>
-            <div class="wildcard-item" style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 10px; border: 1px solid var(--card-border);">
-              <div class="wc-badge silver" style="font-size: 16px;">🥈</div>
-              <div class="wc-info" style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
-                <span class="wc-label" style="font-size: 10px; color: var(--text-secondary);">Subcampeón</span>
-                <span class="wc-value" id="detail-wc-second" style="font-size: 12px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">-</span>
-              </div>
-              <span class="wc-pts" id="detail-wc-second-pts" style="font-size: 11px; font-weight: bold; color: var(--text-secondary);">0 pts</span>
-            </div>
-            <div class="wildcard-item" style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 10px; border: 1px solid var(--card-border);">
-              <div class="wc-badge bronze" style="font-size: 16px;">🥉</div>
-              <div class="wc-info" style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
-                <span class="wc-label" style="font-size: 10px; color: var(--text-secondary);">Tercero</span>
-                <span class="wc-value" id="detail-wc-third" style="font-size: 12px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">-</span>
-              </div>
-              <span class="wc-pts" id="detail-wc-third-pts" style="font-size: 11px; font-weight: bold; color: var(--text-secondary);">0 pts</span>
-            </div>
-            <div class="wildcard-item" style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 10px; border: 1px solid var(--card-border);">
-              <div class="wc-badge scorer" style="font-size: 16px;">🏃</div>
-              <div class="wc-info" style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
-                <span class="wc-label" style="font-size: 10px; color: var(--text-secondary);">Goleador</span>
-                <span class="wc-value" id="detail-wc-scorer" style="font-size: 12px; font-weight: 600; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">-</span>
-              </div>
-              <span class="wc-pts" id="detail-wc-scorer-pts" style="font-size: 11px; font-weight: bold; color: var(--text-secondary);">0 pts</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Predictions List -->
-        <div class="predictions-history-panel" style="display: flex; flex-direction: column; flex: 1; min-height: 250px;">
-          <h4 class="section-subtitle" style="font-size: 13px; color: var(--accent-gold); text-transform: uppercase; margin-bottom: 8px; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; font-weight: 600;">⚽ Detalle de Pronósticos</h4>
-          <div id="detail-predictions-list" class="predictions-history-list" style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px;">
-            <!-- Loaded dynamically in JS -->
-          </div>
-        </div>
-
+      <h2>KIKES MUNDIAL ADMIN</h2>
+      <p>Introduce la clave de acceso para administrar la polla.</p>
+      <div class="form-group" style="margin-top: 15px;">
+        <input type="password" id="input-admin-password" class="form-control text-center" placeholder="Clave de acceso">
       </div>
+      <button id="btn-login-verify" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+        <i class="fa-solid fa-unlock-keyhole"></i> Acceder
+      </button>
+      <p id="txt-login-error" class="login-error-msg hidden">Clave incorrecta. Inténtalo de nuevo.</p>
     </div>
   </div>
 
+  <!-- Local Seed Script -->
+  <script src="seed_data.js"></script>
+  
+  <!-- Main App Script -->
   <script src="app.js"></script>
 </body>
 </html>
