@@ -148,61 +148,43 @@
                 con Google Sheets → publicar posiciones y resultados
               </span>
             </button>
-          </div>
-        </div>
-
-        <!-- Action Card: Import/Export -->
-        <div class="admin-card action-card">
-          <h3><i class="fa-solid fa-file-excel text-gold"></i> Importar / Exportar Excel</h3>
-          <p class="card-desc">Carga archivos individuales de predicción o la base de datos completa. Exporta los resultados finales para la PWA de usuario.</p>
-          
-          <div class="btn-group-vertical">
-            <!-- Export Button -->
-            <button id="btn-export-excel" class="btn btn-primary btn-lg">
-              <i class="fa-solid fa-file-arrow-down"></i> Exportar KikesMundial_Posiciones.xlsm
-            </button>
             
-            <hr class="card-divider">
-
-            <!-- Import DB File -->
-            <div class="file-upload-wrapper">
-              <label for="input-import-db" class="btn btn-secondary">
-                <i class="fa-solid fa-file-arrow-up"></i> Importar Consolidado (.xlsm / .xlsx)
-              </label>
-              <input type="file" id="input-import-db" accept=".xlsx, .xlsm">
-              <span class="file-upload-info">Actualiza toda la base de datos (partidos, participantes y predicciones).</span>
-            </div>
-
-            <!-- Import Individual File -->
-            <div class="file-upload-wrapper">
-              <label for="input-import-user" class="btn btn-dark">
-                <i class="fa-solid fa-user-plus"></i> Importar Plantilla Participante (.xlsx / .xlsm)
-              </label>
-              <input type="file" id="input-import-user" accept=".xlsx, .xlsm" multiple>
-              <span class="file-upload-info">Sube plantillas de jugadores individuales para agregarlos o actualizar sus predicciones.</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Danger Zone -->
-        <div class="admin-card danger-card">
-          <h3><i class="fa-solid fa-triangle-exclamation"></i> Zona de Peligro</h3>
-          <p class="card-desc">Acciones destructivas que afectan la base de datos persistida localmente.</p>
-          
-          <div class="btn-group-horizontal">
-            <button id="btn-reset-db" class="btn btn-danger">
-              <i class="fa-solid fa-arrow-rotate-left"></i> Restablecer Datos de Semilla
-            </button>
-            <button id="btn-clear-db" class="btn btn-danger-outline">
-              <i class="fa-solid fa-trash-can"></i> Borrar Todo
-            </button>
-          </div>
-          <div style="margin-top: 10px;">
-            <button id="btn-clear-all-scorers" class="btn btn-danger-outline" style="width: 100%;">
-              <i class="fa-solid fa-shoe-prints"></i> Eliminar Todos los Goleadores
+            <!-- BIG BLUE 2-LINE BUTTON -->
+            <button id="btn-pull-sheets" style="
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              gap: 2px;
+              width: 100%;
+              padding: 16px 20px;
+              margin-top: 10px;
+              background: linear-gradient(135deg, #1D4ED8 0%, #3B82F6 50%, #60A5FA 100%);
+              color: #fff;
+              border: none;
+              border-radius: 12px;
+              cursor: pointer;
+              font-family: inherit;
+              box-shadow: 0 4px 20px rgba(59,130,246,0.35), 0 0 0 0 rgba(59,130,246,0.3);
+              transition: all 0.2s ease;
+              position: relative;
+              overflow: hidden;
+            "
+            onmouseover="this.style.boxShadow='0 6px 28px rgba(59,130,246,0.55), 0 0 0 3px rgba(59,130,246,0.2)'; this.style.transform='translateY(-1px)'"
+            onmouseout="this.style.boxShadow='0 4px 20px rgba(59,130,246,0.35)'; this.style.transform='translateY(0)'"
+            onmousedown="this.style.transform='translateY(1px)'"
+            onmouseup="this.style.transform='translateY(-1px)'">
+              <span style="font-size: 17px; font-weight: 800; letter-spacing: 0.03em; line-height: 1.2;">
+                <i class="fa-solid fa-cloud-arrow-down" style="margin-right: 8px;"></i>☁️ IMPORTAR DESDE GOOGLE SHEETS
+              </span>
+              <span style="font-size: 12px; font-weight: 400; opacity: 0.88; letter-spacing: 0.02em;">
+                de Google Sheets → descargar posiciones y resultados
+              </span>
             </button>
           </div>
         </div>
+
+
       </section>
 
       <!-- 2. TAB: EDIT MATCHES (PARTIDOS) -->
@@ -217,6 +199,7 @@
             <div class="select-box">
               <select id="match-stage-filter">
                 <option value="ALL">Todas las Fases</option>
+                <option value="Fase de Grupos">Fase de Grupos</option>
                 <option value="Grupo A">Grupo A</option>
                 <option value="Grupo B">Grupo B</option>
                 <option value="Grupo C">Grupo C</option>
@@ -229,6 +212,12 @@
                 <option value="Grupo J">Grupo J</option>
                 <option value="Grupo K">Grupo K</option>
                 <option value="Grupo L">Grupo L</option>
+                <option value="16avos de Final">16avos de Final</option>
+                <option value="Octavos de Final">Octavos de Final</option>
+                <option value="Cuartos de Final">Cuartos de Final</option>
+                <option value="Semifinales">Semifinales</option>
+                <option value="Tercer Puesto">Tercer Puesto</option>
+                <option value="Gran Final">Gran Final</option>
               </select>
             </div>
             <div class="select-box">
@@ -337,6 +326,11 @@
               </tbody>
             </table>
           </div>
+        </div>
+        <div style="margin-top: 15px; display: flex; justify-content: flex-end;">
+          <button id="btn-clear-all-scorers" class="btn btn-danger-outline" style="width: auto; padding: 8px 16px;">
+            <i class="fa-solid fa-trash-can"></i> Eliminar Todos los Goleadores
+          </button>
         </div>
       </section>
 

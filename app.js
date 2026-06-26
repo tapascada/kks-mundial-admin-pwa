@@ -43,9 +43,8 @@ const DOM = {
   inputImportUser: document.getElementById('input-import-user'),
   inputScriptUrl: document.getElementById('input-script-url'),
   btnSyncSheets: document.getElementById('btn-sync-sheets'),
+  btnPullSheets: document.getElementById('btn-pull-sheets'),
   btnSuperSync: document.getElementById('btn-super-sync'),
-  btnResetDb: document.getElementById('btn-reset-db'),
-  btnClearDb: document.getElementById('btn-clear-db'),
   btnClearAllScorers: document.getElementById('btn-clear-all-scorers'),
 
   // Match Tab Elements
@@ -395,7 +394,15 @@ function renderMatchesList() {
 
   const filtered = STATE.matches.filter(m => {
     // Stage Filter
-    if (stageFilter !== 'ALL' && m.groupStage !== stageFilter) return false;
+    if (stageFilter !== 'ALL') {
+      if (stageFilter === 'Fase de Grupos') {
+        if (!m.groupStage.startsWith('Grupo')) return false;
+      } else if (stageFilter === '16avos de Final') {
+        if (m.groupStage !== '16avos de Final' && m.groupStage !== 'Dieciseisavos de Final') return false;
+      } else {
+        if (m.groupStage !== stageFilter) return false;
+      }
+    }
     
     // Status Filter
     const mStatus = m.status || ( (m.realGoals1 !== null && m.realGoals2 !== null) ? "TERMINADO" : "PREVIA" );
@@ -467,7 +474,7 @@ function renderMatchesList() {
       </div>
       <div class="match-card-teams">
         <div class="team-info team-local-info">
-          <span class="match-team">${m.team1}</span>
+          <span class="match-team" contenteditable="true" data-match-id="${m.id}" data-type="team1" style="border-bottom: 1px dashed rgba(255,255,255,0.3); min-width: 50px; display: inline-block; cursor: text; text-align: right; padding: 1px 3px;">${m.team1}</span>
           <img src="${getFlagUrl(m.team1)}" class="match-flag" onerror="this.src='Assets/Flags/placeholder.png'" alt="">
         </div>
         
@@ -483,7 +490,7 @@ function renderMatchesList() {
 
         <div class="team-info team-visit-info">
           <img src="${getFlagUrl(m.team2)}" class="match-flag" onerror="this.src='Assets/Flags/placeholder.png'" alt="">
-          <span class="match-team">${m.team2}</span>
+          <span class="match-team" contenteditable="true" data-match-id="${m.id}" data-type="team2" style="border-bottom: 1px dashed rgba(255,255,255,0.3); min-width: 50px; display: inline-block; cursor: text; text-align: left; padding: 1px 3px;">${m.team2}</span>
         </div>
       </div>
       <button class="match-toggle-btn" data-match-id="${m.id}" style="margin-top: 10px; width: 100%;">
@@ -612,6 +619,57 @@ function renderMatchesList() {
       }
     });
   });
+
+  // Bind editable team name listeners
+  const editableTeams = DOM.adminMatchesList.querySelectorAll('.match-team[contenteditable="true"]');
+  editableTeams.forEach(span => {
+    span.addEventListener('blur', (e) => {
+      const matchId = parseInt(e.target.dataset.matchId);
+      const type = e.target.dataset.type;
+      const match = STATE.matches.find(m => m.id === matchId);
+      if (!match) return;
+
+      const newName = e.target.innerText.trim();
+      if (newName === '') {
+        e.target.innerText = type === 'team1' ? match.team1 : match.team2;
+        return;
+      }
+
+      if (type === 'team1') {
+        if (match.team1 !== newName) {
+          match.team1 = newName;
+          const flagImg = e.target.nextElementSibling;
+          if (flagImg && flagImg.classList.contains('match-flag')) {
+            flagImg.src = getFlagUrl(newName);
+          }
+          saveAndRefreshTeams();
+        }
+      } else {
+        if (match.team2 !== newName) {
+          match.team2 = newName;
+          const flagImg = e.target.previousElementSibling;
+          if (flagImg && flagImg.classList.contains('match-flag')) {
+            flagImg.src = getFlagUrl(newName);
+          }
+          saveAndRefreshTeams();
+        }
+      }
+    });
+
+    span.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.target.blur();
+      }
+    });
+  });
+
+  function saveAndRefreshTeams() {
+    extractTeamsList();
+    populateDropdowns();
+    recalculateAllPoints();
+    saveState();
+  }
 }
 
 function loadMatchPredictions(matchId) {
@@ -1415,6 +1473,8 @@ function setupEventListeners() {
 
   DOM.btnSyncSheets.addEventListener('click', syncToGoogleSheets);
   
+  DOM.btnPullSheets.addEventListener('click', importFromGoogleSheets);
+  
   DOM.btnSuperSync.addEventListener('click', superSync);
 
   DOM.inputImportDb.addEventListener('change', (e) => {
@@ -1433,35 +1493,7 @@ function setupEventListeners() {
     }
   });
 
-  DOM.btnResetDb.addEventListener('click', () => {
-    if (confirm('¿Estás seguro de restablecer la base de datos a los datos de semilla originales? Se perderán todos tus cambios de marcadores reales.')) {
-      localStorage.removeItem('kikes_admin_db');
-      loadInitialData();
-      extractTeamsList();
-      populateDropdowns();
-      recalculateAllPoints();
-      saveState();
-      renderUI();
-      updateStats();
-      showToast('Base de datos restablecida a semilla', 'success');
-    }
-  });
 
-  DOM.btnClearDb.addEventListener('click', () => {
-    if (confirm('¿Estás SEGURO de querer BORRAR TODOS los datos? (Participantes, Partidos, Predicciones). Esta acción es irreversible.')) {
-      STATE.positions = [];
-      STATE.matches = [];
-      STATE.predictions = [];
-      STATE.players = [];
-      STATE.settings = { realWinner: '', realSecond: '', realThird: '' };
-      saveState();
-      populateDropdowns();
-      renderUI();
-      updateStats();
-      DOM.txtStatusText.innerText = "Base Vacía";
-      showToast('Base de datos vaciada por completo', 'warning');
-    }
-  });
 
   DOM.btnClearAllScorers.addEventListener('click', () => {
     if (STATE.players.length === 0) {
@@ -2224,6 +2256,60 @@ async function superSync() {
   } catch (err) {
     console.error('Super Sync Error:', err);
     showToast(`Error en la súper sincronización: ${err.message}`, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalHtml;
+  }
+}
+
+async function importFromGoogleSheets() {
+  const url = localStorage.getItem('kikes_admin_script_url') || 'https://script.google.com/macros/s/AKfycbw2C5cDfWGtGR-WJeI_qwD99Vzpl5_V8j-6zJnheMPZkSJ2Ld07q1sTEaiY7M8-UyI/exec';
+  if (!url) {
+    showToast('Por favor, ingresa primero la URL del Web App de Google Apps Script.', 'warning');
+    return;
+  }
+
+  if (!confirm('¿Estás seguro de querer IMPORTAR los datos desde Google Sheets? Esto sobrescribirá todos los datos locales actuales (participantes, partidos y pronósticos).')) {
+    return;
+  }
+
+  const btn = DOM.btnPullSheets;
+  if (!btn) return;
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Importando...';
+
+  showToast('Descargando base de datos desde Google Sheets...', 'info');
+
+  try {
+    const fetchUrl = `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+    const response = await fetch(fetchUrl, {
+      method: 'GET',
+      mode: 'cors'
+    });
+
+    if (!response.ok) throw new Error("Respuesta de servidor inválida: " + response.status);
+
+    const result = await response.json();
+    if (result.status === 'success' || result.positions) {
+      STATE.positions = result.positions || [];
+      STATE.matches = result.matches || [];
+      STATE.predictions = result.predictions || [];
+      
+      extractTeamsList();
+      populateDropdowns();
+      recalculateAllPoints();
+      saveState();
+
+      renderUI();
+      updateStats();
+      showToast('¡Base de datos importada con éxito desde Google Sheets!', 'success');
+    } else {
+      throw new Error(result.message || 'El script de Google no retornó el formato de base de datos esperado.');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast(`Error al importar desde Google Sheets: ${err.message}`, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalHtml;
