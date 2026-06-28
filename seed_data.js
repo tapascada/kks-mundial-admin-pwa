@@ -1085,9 +1085,9 @@ const SEED_DATA = {
     {
       "id": 73,
       "groupStage": "16avos de Final",
-      "team1": "TBD",
+      "team1": "Sudáfrica",
       "realGoals1": null,
-      "team2": "TBD",
+      "team2": "Canadá",
       "realGoals2": null
     }
   ],

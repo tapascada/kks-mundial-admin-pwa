@@ -239,60 +239,53 @@ function recalculateAllPoints() {
         pred.predGoals1 !== null && pred.predGoals1 !== undefined &&
         pred.predGoals2 !== null && pred.predGoals2 !== undefined) {
 
-      const isKnockout = match.groupStage && !match.groupStage.startsWith('Grupo');
+      // ── Calculate standard score points (5 / 3 / 2 / 0) ──
+      const r1 = match.realGoals1;
+      const r2 = match.realGoals2;
+      const p1 = pred.predGoals1;
+      const p2 = pred.predGoals2;
 
+      const realOutcome = r1 > r2 ? 1 : (r1 < r2 ? 2 : 0);
+      const predOutcome = p1 > p2 ? 1 : (p1 < p2 ? 2 : 0);
+
+      const correctExact      = (r1 === p1 && r2 === p2);
+      const correctDifference = ((r1 - r2) === (p1 - p2));
+      const correctOutcome    = (realOutcome === predOutcome);
+
+      if (correctExact) {
+        pts = 5;
+      } else if (correctDifference) {
+        pts = 3;
+      } else if (correctOutcome) {
+        pts = 2;
+      }
+
+      // ── Knockout Stage rule: add +2 additional points for guessing correct final winner ──
+      const isKnockout = match.groupStage && !match.groupStage.startsWith('Grupo');
       if (isKnockout) {
-        // ── Fase eliminatoria: solo 2 pts si aciertas el equipo que avanza ──
         // Determinar quién ganó realmente (por resultado normal o penaltis)
         let realAdvancing = null;
-        const r1 = match.realGoals1;
-        const r2 = match.realGoals2;
         if (r1 > r2) {
           realAdvancing = match.team1;
         } else if (r2 > r1) {
           realAdvancing = match.team2;
         } else {
-          // Empate → gana por penaltis
           realAdvancing = (match.penaltiesWinner || '').trim() || null;
         }
 
         // Determinar quién pronosticó el participante que avanza
-        const p1 = pred.predGoals1;
-        const p2 = pred.predGoals2;
         let predAdvancing = null;
         if (p1 > p2) {
           predAdvancing = match.team1;
         } else if (p2 > p1) {
           predAdvancing = match.team2;
         } else {
-          // Empate pronosticado → usar penaltiesWinner del pronóstico
           predAdvancing = (pred.penaltiesWinner || '').trim() || null;
         }
 
         if (realAdvancing && predAdvancing &&
             realAdvancing.trim().toLowerCase() === predAdvancing.trim().toLowerCase()) {
-          pts = 2;
-        }
-      } else {
-        // ── Fase de grupos: sistema normal 5 / 3 / 2 / 0 ──
-        const r1 = match.realGoals1;
-        const r2 = match.realGoals2;
-        const p1 = pred.predGoals1;
-        const p2 = pred.predGoals2;
-
-        const realOutcome = r1 > r2 ? 1 : (r1 < r2 ? 2 : 0);
-        const predOutcome = p1 > p2 ? 1 : (p1 < p2 ? 2 : 0);
-
-        const correctExact      = (r1 === p1 && r2 === p2);
-        const correctDifference = ((r1 - r2) === (p1 - p2));
-        const correctOutcome    = (realOutcome === predOutcome);
-
-        if (correctExact) {
-          pts = 5;
-        } else if (correctDifference) {
-          pts = 3;
-        } else if (correctOutcome) {
-          pts = 2;
+          pts += 2;
         }
       }
     }
@@ -709,8 +702,9 @@ function loadMatchPredictions(matchId) {
     }
     
     let badgeClass = 'zero';
-    if (p.points === 5) badgeClass = 'exact';
-    else if (p.points === 3) badgeClass = 'diff';
+    if (p.points === 7) badgeClass = 'seven';
+    else if (p.points === 5) badgeClass = 'exact';
+    else if (p.points === 3 || p.points === 4) badgeClass = 'diff';
     else if (p.points === 2) badgeClass = 'outcome';
     
     const predText = (p.predGoals1 !== null && p.predGoals2 !== null) ? `${p.predGoals1} - ${p.predGoals2}` : "-";
@@ -1086,8 +1080,9 @@ function openParticipantDetail(name) {
     const predText = (pred.predGoals1 !== null && pred.predGoals2 !== null) ? `${pred.predGoals1} - ${pred.predGoals2}` : '-';
 
     let badgeClass = 'zero';
-    if (pred.points === 5) badgeClass = 'exact';
-    else if (pred.points === 3) badgeClass = 'diff';
+    if (pred.points === 7) badgeClass = 'seven';
+    else if (pred.points === 5) badgeClass = 'exact';
+    else if (pred.points === 3 || pred.points === 4) badgeClass = 'diff';
     else if (pred.points === 2) badgeClass = 'outcome';
 
     div.innerHTML = `
@@ -2178,9 +2173,8 @@ async function syncToGoogleSheets() {
         predictedScorer: p.predictedScorer || "",
         scorerPoints: p.scorerPoints
       })),
-      // Solo sincronizar hasta partido 73 (16avos en adelante se sincronizan después)
+      // Sincronizar todos los partidos (incluidos 16avos en adelante)
       matches: STATE.matches
-        .filter(m => m.id <= 73)
         .map(m => ({
           id: m.id,
           groupStage: m.groupStage,
@@ -2193,7 +2187,6 @@ async function syncToGoogleSheets() {
           matchDate: m.matchDate || ""
         })),
       predictions: STATE.predictions
-        .filter(pr => pr.matchId <= 73)
         .map(pr => ({
           participantName: pr.participantName,
           matchId: pr.matchId,

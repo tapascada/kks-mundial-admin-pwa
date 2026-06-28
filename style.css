@@ -1031,6 +1031,11 @@ body {
   display: inline-block;
 }
 
+.pred-pts-badge.seven {
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid #8b5cf6;
+  color: #8b5cf6;
+}
 .pred-pts-badge.exact {
   background: rgba(16, 185, 129, 0.15);
   border: 1px solid var(--green-accent);
@@ -1553,6 +1558,11 @@ body {
   display: inline-block;
   min-width: 28px;
   text-align: center;
+}
+
+.pred-pts-badge.seven {
+  background: #8B5CF6;
+  color: #fff;
 }
 
 .pred-pts-badge.exact {
