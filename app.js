@@ -455,8 +455,8 @@ function renderMatchesList() {
     // Format date like in client PWA
     let dateStr = '';
     if (m.matchDate) {
-      const d = new Date(String(m.matchDate).replace(' ', 'T'));
-      if (!isNaN(d.getTime())) {
+      const d = parseMatchDate(m.matchDate);
+      if (d && !isNaN(d.getTime())) {
         const options = { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
         dateStr = d.toLocaleString('es-ES', options);
       } else {
@@ -1619,6 +1619,52 @@ function setupEventListeners() {
     if (e.target === DOM.modalAddScorer) DOM.modalAddScorer.classList.add('hidden');
     if (e.target === DOM.modalParticipantDetail) DOM.modalParticipantDetail.classList.add('hidden');
   });
+}
+
+// --- Helper to parse match dates as Colombia Time (UTC-5) by default ---
+function parseMatchDate(dateStr) {
+  if (!dateStr) return null;
+  let str = String(dateStr).trim();
+  
+  // 1. Check Excel serial number
+  if (!isNaN(str) && str.length > 0) {
+    const serial = parseFloat(str);
+    if (serial > 30000 && serial < 60000) {
+      const ms = Math.round((serial - 25569) * 86400 * 1000);
+      const d = new Date(ms);
+      const year = d.getUTCFullYear();
+      const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      const hours = String(d.getUTCHours()).padStart(2, '0');
+      const minutes = String(d.getUTCMinutes()).padStart(2, '0');
+      const seconds = String(d.getUTCSeconds()).padStart(2, '0');
+      
+      const isoStr = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}-05:00`;
+      return new Date(isoStr);
+    }
+  }
+
+  // Remove parentheticals (e.g. " (hora estándar de Colombia)") to prevent invalid date parsing on some browsers/locales
+  str = str.replace(/\s*\([^)]*\)\s*/g, '').trim();
+
+  // 2. Check if it's a date-time string in format YYYY-MM-DD or YYYY-MM-DD HH:mm:ss
+  const isoRegex = /^\d{4}-\d{2}-\d{2}/;
+  if (isoRegex.test(str)) {
+    if (str.endsWith('Z')) {
+      str = str.slice(0, -1);
+    }
+    str = str.replace(' ', 'T');
+    const hasTimezone = str.includes('+') || (str.includes('T') && str.indexOf('-', str.indexOf('T')) !== -1);
+    if (!hasTimezone) {
+      str += '-05:00';
+    }
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // 3. Fallback for any other valid date string format
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
 }
 
 // --- Flag Path Helper ---
