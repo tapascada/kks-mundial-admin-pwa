@@ -19239,6 +19239,12 @@ const SEED_DATA = {
   ],
   "players": [
     {
+      "name": "Mr. X",
+      "team": "Colombia",
+      "goals": 100,
+      "synonyms": "Mr. X;Mr X;X"
+    },
+    {
       "name": "Lionel Messi",
       "team": "Argentina",
       "goals": 5,
@@ -19348,8 +19354,8 @@ const SEED_DATA = {
     }
   ],
   "settings": {
-    "realWinner": "Argentina",
-    "realSecond": "Francia",
-    "realThird": "Alemania"
+    "realWinner": "",
+    "realSecond": "",
+    "realThird": ""
   }
 };
