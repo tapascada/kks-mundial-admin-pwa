@@ -451,6 +451,8 @@ function renderMatchesList() {
     const g1Filled = m.realGoals1 !== null ? 'filled' : '';
     const g2Filled = m.realGoals2 !== null ? 'filled' : '';
     const currentStatus = m.status || ( (m.realGoals1 !== null && m.realGoals2 !== null) ? "TERMINADO" : "PREVIA" );
+    const isPlayoff = !m.groupStage.toLowerCase().startsWith('grupo');
+    const showPenalties = isPlayoff && currentStatus === 'TERMINADO' && m.realGoals1 !== null && m.realGoals2 !== null && m.realGoals1 === m.realGoals2;
 
     // Format date like in client PWA
     let dateStr = '';
@@ -494,6 +496,14 @@ function renderMatchesList() {
           <img src="${getFlagUrl(m.team2)}" class="match-flag" onerror="this.src='Assets/Flags/placeholder.png'" alt="">
           <span class="match-team" contenteditable="true" data-match-id="${m.id}" data-type="team2" style="border-bottom: 1px dashed rgba(255,255,255,0.3); min-width: 50px; display: inline-block; cursor: text; text-align: left; padding: 1px 3px;">${m.team2}</span>
         </div>
+      </div>
+      <div class="penalty-winner-wrapper" id="penalty-wrapper-${m.id}" style="display: ${showPenalties ? 'flex' : 'none'}; justify-content: center; align-items: center; margin-top: 10px; gap: 8px; font-size: 13px;">
+        <span style="font-weight: bold; color: var(--accent-gold);">Ganador Penales:</span>
+        <select class="penalty-winner-select" data-match-id="${m.id}" style="background: #0F172A; color: #fff; border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 8px; font-weight: bold;">
+          <option value="" ${!m.penaltiesWinner ? 'selected' : ''}>-- Seleccionar --</option>
+          <option value="${m.team1}" ${m.penaltiesWinner === m.team1 ? 'selected' : ''}>${m.team1}</option>
+          <option value="${m.team2}" ${m.penaltiesWinner === m.team2 ? 'selected' : ''}>${m.team2}</option>
+        </select>
       </div>
       <button class="match-toggle-btn" data-match-id="${m.id}" style="margin-top: 10px; width: 100%;">
         <i class="fa-solid fa-chevron-down"></i> Ver Pronósticos
@@ -562,6 +572,7 @@ function renderMatchesList() {
       saveState();
       updateStandingsLiveOnly(); // Faster UI update
       updateStats();
+      updatePenaltyWinnerVisibility(matchId);
 
       // Update predictions panel if expanded
       const panel = document.getElementById(`panel-predictions-${matchId}`);
@@ -586,6 +597,30 @@ function renderMatchesList() {
         // Re-render to clear input text boxes
         renderMatchesList();
       }
+
+      recalculateAllPoints();
+      saveState();
+      updateStandingsLiveOnly();
+      updateStats();
+      updatePenaltyWinnerVisibility(matchId);
+
+      // Update predictions panel if expanded
+      const panel = document.getElementById(`panel-predictions-${matchId}`);
+      if (panel && panel.classList.contains('show')) {
+        loadMatchPredictions(matchId);
+      }
+    });
+  });
+
+  // Bind penalty winner select listeners
+  const penaltySelects = DOM.adminMatchesList.querySelectorAll('.penalty-winner-select');
+  penaltySelects.forEach(select => {
+    select.addEventListener('change', (e) => {
+      const matchId = parseInt(e.target.dataset.matchId);
+      const match = STATE.matches.find(m => m.id === matchId);
+      if (!match) return;
+
+      match.penaltiesWinner = e.target.value || null;
 
       recalculateAllPoints();
       saveState();
@@ -671,6 +706,43 @@ function renderMatchesList() {
     populateDropdowns();
     recalculateAllPoints();
     saveState();
+  }
+}
+
+function updatePenaltyWinnerVisibility(matchId) {
+  const match = STATE.matches.find(m => m.id === matchId);
+  if (!match) return;
+
+  const wrapper = document.getElementById(`penalty-wrapper-${matchId}`);
+  if (!wrapper) return;
+
+  const isPlayoff = !match.groupStage.toLowerCase().startsWith('grupo');
+  const currentStatus = match.status || ( (match.realGoals1 !== null && match.realGoals2 !== null) ? "TERMINADO" : "PREVIA" );
+  const isDraw = match.realGoals1 !== null && match.realGoals2 !== null && match.realGoals1 === match.realGoals2;
+  const showPenalties = isPlayoff && currentStatus === 'TERMINADO' && isDraw;
+
+  if (showPenalties) {
+    wrapper.style.display = 'flex';
+    // Update select options in case team names were edited
+    const select = wrapper.querySelector('.penalty-winner-select');
+    if (select) {
+      const currentVal = select.value || match.penaltiesWinner || "";
+      select.innerHTML = `
+        <option value="" ${!currentVal ? 'selected' : ''}>-- Seleccionar --</option>
+        <option value="${match.team1}" ${currentVal === match.team1 ? 'selected' : ''}>${match.team1}</option>
+        <option value="${match.team2}" ${currentVal === match.team2 ? 'selected' : ''}>${match.team2}</option>
+      `;
+    }
+  } else {
+    wrapper.style.display = 'none';
+    // Clear penalty winner if no longer applicable
+    if (match.penaltiesWinner) {
+      match.penaltiesWinner = null;
+      recalculateAllPoints();
+      saveState();
+      updateStandingsLiveOnly();
+      updateStats();
+    }
   }
 }
 
@@ -2078,15 +2150,28 @@ async function syncFromEspn() {
               formattedDate = `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
             }
 
-            // If goals, status or date changed, update it
+            let penaltiesWinner = null;
+            if (matchStatus === "TERMINADO" && finalGoals1 !== null && finalGoals2 !== null && finalGoals1 === finalGoals2) {
+              const comp1Winner = comp1.winner === true || comp1.winner === "true";
+              const comp2Winner = comp2.winner === true || comp2.winner === "true";
+              if (comp1Winner) {
+                penaltiesWinner = team1Mapped;
+              } else if (comp2Winner) {
+                penaltiesWinner = team2Mapped;
+              }
+            }
+
+            // If goals, status, date or penalties winner changed, update it
             if (matchedMatch.realGoals1 !== finalGoals1 || 
                 matchedMatch.realGoals2 !== finalGoals2 || 
                 matchedMatch.status !== matchStatus || 
-                matchedMatch.matchDate !== formattedDate) {
+                matchedMatch.matchDate !== formattedDate ||
+                matchedMatch.penaltiesWinner !== penaltiesWinner) {
               matchedMatch.realGoals1 = finalGoals1;
               matchedMatch.realGoals2 = finalGoals2;
               matchedMatch.status = matchStatus;
               matchedMatch.matchDate = formattedDate;
+              matchedMatch.penaltiesWinner = penaltiesWinner;
               updatedCount++;
             }
           }
