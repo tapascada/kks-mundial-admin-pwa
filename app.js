@@ -302,8 +302,29 @@ function resolveKnockouts() {
 }
 
 function recalculateAllPoints() {
+  // Save previous team names to detect changes in brackets
+  const prevTeams = STATE.matches.map(m => ({ id: m.id, t1: m.team1, t2: m.team2 }));
+
   // Resolve knockout pairings before calculating points
   resolveKnockouts();
+
+  // Check if any bracket team name changed
+  let changed = false;
+  STATE.matches.forEach((m, idx) => {
+    const prev = prevTeams[idx];
+    if (prev && (m.team1 !== prev.t1 || m.team2 !== prev.t2)) {
+      changed = true;
+    }
+  });
+
+  if (changed) {
+    // If bracket teams changed, re-render the matches list to show new teams in UI
+    setTimeout(() => {
+      if (typeof renderMatchesList === 'function') {
+        renderMatchesList();
+      }
+    }, 50);
+  }
 
   // 1. Get top scorers (players with max goals > 0)
   let maxGoals = 0;
