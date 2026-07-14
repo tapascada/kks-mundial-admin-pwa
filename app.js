@@ -1934,7 +1934,7 @@ function checkAuthentication() {
     
     const handleLogin = () => {
       const password = passwordInput.value.trim();
-      if (password === 'guacaguaca') {
+      if (password === 'asdfgh') {
         localStorage.setItem('kikes_admin_auth', 'true');
         lockScreen.style.opacity = '0';
         setTimeout(() => {
