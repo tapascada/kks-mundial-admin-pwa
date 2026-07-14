@@ -1,13 +1,13 @@
 {
-  "name": "KIKES MUNDIAL 2026",
-  "short_name": "Kikes Mundial",
-  "description": "Tabla de Posiciones y Podio - KIKES Mundial 2026",
+  "name": "KIKES MUNDIAL ADMIN PWA",
+  "short_name": "Kikes Admin",
+  "description": "Panel de Administración y Recálculo - KIKES Mundial 2026",
   "id": "./index.html",
   "scope": "./",
   "start_url": "./index.html",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#090d16",
+  "orientation": "any",
+  "background_color": "#070a13",
   "theme_color": "#0d3b66",
   "icons": [
     {
